@@ -165,6 +165,81 @@ class AuthenticationAPITester:
             token=token
         )
 
+    def test_session_data_endpoint(self, session_id=None):
+        """Test Google OAuth session data endpoint"""
+        if session_id:
+            headers = {'X-Session-ID': session_id}
+            url = f"{self.base_url}/session-data"
+            
+            self.tests_run += 1
+            print(f"\n🔍 Testing Google OAuth Session Data...")
+            print(f"   URL: {url}")
+            
+            try:
+                response = requests.get(url, headers=headers)
+                success = response.status_code in [200, 400]  # 400 is expected for invalid session
+                if success:
+                    self.tests_passed += 1
+                    print(f"✅ Passed - Status: {response.status_code}")
+                    if response.status_code == 200:
+                        print(f"   Response: {json.dumps(response.json(), indent=2)}")
+                        return True, response.json()
+                    else:
+                        print(f"   Expected error for invalid session: {response.text}")
+                        return True, {}
+                else:
+                    print(f"❌ Failed - Unexpected status: {response.status_code}")
+                    return False, {}
+            except Exception as e:
+                print(f"❌ Failed - Error: {str(e)}")
+                return False, {}
+        else:
+            # Test without session ID (should fail)
+            return self.run_test(
+                "Session Data (No Session ID)",
+                "GET",
+                "session-data",
+                400
+            )
+
+    def test_set_session_cookie(self, session_token=None):
+        """Test setting session cookie"""
+        if session_token:
+            return self.run_test(
+                "Set Session Cookie",
+                "POST",
+                "set-session-cookie",
+                200,
+                data={"session_token": session_token}
+            )
+        else:
+            # Test without session token (should fail)
+            return self.run_test(
+                "Set Session Cookie (No Token)",
+                "POST",
+                "set-session-cookie",
+                422,  # Validation error
+                data={}
+            )
+
+    def test_check_session(self):
+        """Test session check endpoint"""
+        return self.run_test(
+            "Check Session (No Session)",
+            "GET",
+            "check-session",
+            200
+        )
+
+    def test_logout(self):
+        """Test logout endpoint"""
+        return self.run_test(
+            "Logout",
+            "POST",
+            "logout",
+            200
+        )
+
 def main():
     print("🚀 Starting Authentication API Tests")
     print("=" * 50)
