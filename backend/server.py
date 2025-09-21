@@ -439,7 +439,7 @@ async def get_session_data(request: Request):
             detail="Error del servidor de autenticación"
         )
 
-@api_router.post("/auth/set-session-cookie")
+@api_router.post("/set-session-cookie")
 async def set_session_cookie(response: Response, session_token: str):
     """Set session cookie after Google OAuth"""
     response.set_cookie(
