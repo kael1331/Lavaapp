@@ -49,14 +49,19 @@ const AuthProvider = ({ children }) => {
       // Clear URL fragment
       window.history.replaceState(null, null, window.location.pathname);
       
+      // Wait a moment for cookie to be set properly
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       // Get user info directly from the session data and backend
       const userResponse = await axios.get(`${API}/check-session`);
+      console.log('Check session after Google OAuth:', userResponse.data);
+      
       if (userResponse.data.authenticated) {
         setUser(userResponse.data.user);
         console.log('Google login successful:', userResponse.data.user);
       } else {
         console.error('Failed to authenticate after Google login');
-        setLoading(false);
+        alert('Error: No se pudo completar el login con Google. Por favor intenta de nuevo.');
       }
       
     } catch (error) {
