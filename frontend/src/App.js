@@ -39,8 +39,8 @@ const AuthProvider = ({ children }) => {
       const sessionData = response.data;
       
       // Set session cookie
-      await axios.post(`${API}/set-session-cookie`, null, {
-        params: { session_token: sessionData.session_token }
+      await axios.post(`${API}/set-session-cookie`, {
+        session_token: sessionData.session_token
       });
       
       // Clear URL fragment
