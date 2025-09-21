@@ -15,14 +15,71 @@ const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      fetchCurrentUser();
-    } else {
+    // Check for session_id in URL fragment (Google OAuth callback)
+    const fragment = window.location.hash;
+    if (fragment.includes('session_id=')) {
+      const sessionId = fragment.split('session_id=')[1].split('&')[0];
+      processGoogleSession(sessionId);
+      return;
+    }
+
+    // Check existing session or JWT token
+    checkExistingSession();
+  }, []);
+
+  const processGoogleSession = async (sessionId) => {
+    try {
+      setLoading(true);
+      
+      // Get session data from backend
+      const response = await axios.get(`${API}/auth/session-data`, {
+        headers: { 'X-Session-ID': sessionId }
+      });
+      
+      const sessionData = response.data;
+      
+      // Set session cookie
+      await axios.post(`${API}/auth/set-session-cookie`, null, {
+        params: { session_token: sessionData.session_token }
+      });
+      
+      // Clear URL fragment
+      window.history.replaceState(null, null, window.location.pathname);
+      
+      // Check session after setting cookie
+      await checkExistingSession();
+      
+    } catch (error) {
+      console.error('Error processing Google session:', error);
       setLoading(false);
     }
-  }, []);
+  };
+
+  const checkExistingSession = async () => {
+    try {
+      const response = await axios.get(`${API}/auth/check-session`);
+      if (response.data.authenticated) {
+        setUser(response.data.user);
+      } else {
+        // Fallback to JWT token
+        const token = localStorage.getItem('token');
+        if (token) {
+          axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+          await fetchCurrentUser();
+        }
+      }
+    } catch (error) {
+      console.error('Error checking session:', error);
+      // Try JWT fallback
+      const token = localStorage.getItem('token');
+      if (token) {
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        await fetchCurrentUser();
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchCurrentUser = async () => {
     try {
@@ -31,8 +88,6 @@ const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('Error fetching user:', error);
       logout();
-    } finally {
-      setLoading(false);
     }
   };
 
