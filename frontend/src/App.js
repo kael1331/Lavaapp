@@ -32,14 +32,14 @@ const AuthProvider = ({ children }) => {
       setLoading(true);
       
       // Get session data from backend
-      const response = await axios.get(`${API}/auth/session-data`, {
+      const response = await axios.get(`${API}/session-data`, {
         headers: { 'X-Session-ID': sessionId }
       });
       
       const sessionData = response.data;
       
       // Set session cookie
-      await axios.post(`${API}/auth/set-session-cookie`, null, {
+      await axios.post(`${API}/set-session-cookie`, null, {
         params: { session_token: sessionData.session_token }
       });
       
