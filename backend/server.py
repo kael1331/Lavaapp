@@ -394,6 +394,19 @@ async def get_session_data(request: Request):
             user_dict = new_user.dict()
             await db.users.insert_one(user_dict)
             user = new_user
+        else:
+            # Update existing user with Google info if they don't have it
+            if not user.google_id:
+                await db.users.update_one(
+                    {"id": user.id},
+                    {"$set": {
+                        "google_id": session_data["id"],
+                        "picture": session_data.get("picture")
+                    }}
+                )
+                # Update user object
+                user.google_id = session_data["id"]
+                user.picture = session_data.get("picture")
         
         # Create session in database
         session_token = session_data["session_token"]
