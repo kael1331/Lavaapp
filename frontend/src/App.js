@@ -57,7 +57,7 @@ const AuthProvider = ({ children }) => {
 
   const checkExistingSession = async () => {
     try {
-      const response = await axios.get(`${API}/auth/check-session`);
+      const response = await axios.get(`${API}/check-session`);
       if (response.data.authenticated) {
         setUser(response.data.user);
       } else {
