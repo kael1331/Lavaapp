@@ -343,29 +343,6 @@ async def protected_route(request: Request, current_user: User = Depends(get_cur
 async def admin_only_route(request: Request, admin_user: User = Depends(get_admin_user)):
     return {"message": "Solo los administradores pueden ver esto", "secret": "Información ultra secreta"}
 
-# Include router
-app.include_router(api_router)
-
-# CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
-
-@app.on_event("shutdown")
-async def shutdown_db_client():
-    client.close()
-
 # Google OAuth Session Endpoint
 @api_router.get("/session-data", response_model=SessionDataResponse)
 async def get_session_data(request: Request):
@@ -491,3 +468,26 @@ async def root():
 @api_router.get("/health")
 async def health_check():
     return {"status": "ok", "message": "Sistema de autenticación funcionando"}
+
+# Include router
+app.include_router(api_router)
+
+# CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_credentials=True,
+    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+@app.on_event("shutdown")
+async def shutdown_db_client():
+    client.close()
