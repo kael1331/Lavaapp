@@ -435,14 +435,17 @@ class SetSessionCookieRequest(BaseModel):
 @api_router.post("/set-session-cookie")
 async def set_session_cookie(response: Response, request_data: SetSessionCookieRequest):
     """Set session cookie after Google OAuth"""
+    # Determine if we're in development or production
+    is_development = os.environ.get('CORS_ORIGINS', '*') == '*'
+    
     response.set_cookie(
         key="session_token",
         value=request_data.session_token,
         max_age=7 * 24 * 60 * 60,  # 7 days
         path="/",
-        secure=True,
+        secure=not is_development,  # Only secure in production
         httponly=True,
-        samesite="none"
+        samesite="lax" if is_development else "none"  # Lax for dev, none for prod
     )
     return {"message": "Cookie establecida correctamente"}
 
