@@ -381,6 +381,27 @@ def main():
         if admin_user_id:
             tester.test_toggle_user_status(tester.employee_token, admin_user_id, should_succeed=False)
     
+    # Test 9: Google OAuth Endpoints
+    print("\n📋 GOOGLE OAUTH TESTS")
+    
+    # Test session data endpoint without session ID
+    tester.test_session_data_endpoint()
+    
+    # Test session data endpoint with invalid session ID
+    tester.test_session_data_endpoint("invalid-session-id")
+    
+    # Test set session cookie without token
+    tester.test_set_session_cookie()
+    
+    # Test set session cookie with dummy token
+    tester.test_set_session_cookie("dummy-session-token")
+    
+    # Test check session endpoint
+    tester.test_check_session()
+    
+    # Test logout endpoint
+    tester.test_logout()
+    
     # Print final results
     print("\n" + "=" * 50)
     print(f"📊 FINAL RESULTS")
