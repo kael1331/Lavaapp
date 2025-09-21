@@ -367,7 +367,7 @@ async def shutdown_db_client():
     client.close()
 
 # Google OAuth Session Endpoint
-@api_router.get("/auth/session-data", response_model=SessionDataResponse)
+@api_router.get("/session-data", response_model=SessionDataResponse)
 async def get_session_data(request: Request):
     session_id = request.headers.get("X-Session-ID")
     if not session_id:
