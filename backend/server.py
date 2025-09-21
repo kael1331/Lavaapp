@@ -482,6 +482,11 @@ async def check_session(request: Request):
         return {"authenticated": True, "user": UserResponse(**user.dict())}
     return {"authenticated": False}
 
+# Root endpoint
+@api_router.get("/")
+async def root():
+    return {"message": "Hello World", "status": "API funcionando"}
+
 # Health check
 @api_router.get("/health")
 async def health_check():
