@@ -416,12 +416,15 @@ async def get_session_data(request: Request):
             detail="Error del servidor de autenticación"
         )
 
+class SetSessionCookieRequest(BaseModel):
+    session_token: str
+
 @api_router.post("/set-session-cookie")
-async def set_session_cookie(response: Response, session_token: str):
+async def set_session_cookie(response: Response, request_data: SetSessionCookieRequest):
     """Set session cookie after Google OAuth"""
     response.set_cookie(
         key="session_token",
-        value=session_token,
+        value=request_data.session_token,
         max_age=7 * 24 * 60 * 60,  # 7 days
         path="/",
         secure=True,
