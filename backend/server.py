@@ -474,7 +474,7 @@ async def logout(request: Request, response: Response):
     
     return {"message": "Sesión cerrada correctamente"}
 
-@api_router.get("/auth/check-session")
+@api_router.get("/check-session")
 async def check_session(request: Request):
     """Check if user has valid session"""
     user = await get_current_user_optional(request)
