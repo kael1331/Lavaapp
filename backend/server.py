@@ -56,12 +56,30 @@ class UserResponse(UserBase):
     id: str
     created_at: datetime
     is_active: bool
+    google_id: Optional[str] = None
+    picture: Optional[str] = None
 
 class User(UserBase):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    password_hash: str
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    password_hash: Optional[str] = None  # Optional for Google users
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     is_active: bool = True
+    google_id: Optional[str] = None
+    picture: Optional[str] = None
+
+class GoogleUser(BaseModel):
+    email: EmailStr
+    nombre: str
+    google_id: str
+    picture: Optional[str] = None
+    rol: str = "EMPLEADO"  # Default role for Google users
+
+class GoogleSession(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    session_token: str
+    expires_at: datetime
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class Token(BaseModel):
     access_token: str
@@ -71,6 +89,13 @@ class Token(BaseModel):
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
+
+class SessionDataResponse(BaseModel):
+    id: str
+    email: str
+    name: str
+    picture: str
+    session_token: str
 
 class DashboardStats(BaseModel):
     total_users: int
