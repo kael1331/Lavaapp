@@ -318,7 +318,7 @@ async def delete_user(user_id: str, request: Request, admin_user: User = Depends
     return {"message": "Usuario eliminado correctamente"}
 
 @api_router.put("/admin/users/{user_id}/toggle-status")
-async def toggle_user_status(user_id: str, admin_user: User = Depends(get_admin_user)):
+async def toggle_user_status(user_id: str, request: Request, admin_user: User = Depends(get_admin_user)):
     user_doc = await db.users.find_one({"id": user_id})
     if not user_doc:
         raise HTTPException(
