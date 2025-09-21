@@ -280,7 +280,7 @@ async def get_current_user_info(request: Request, current_user: User = Depends(g
 
 # Dashboard Routes
 @api_router.get("/dashboard/stats")
-async def get_dashboard_stats(current_user: User = Depends(get_current_user)):
+async def get_dashboard_stats(request: Request, current_user: User = Depends(get_current_user)):
     if current_user.rol == UserRole.ADMIN:
         # Admin sees all stats
         total_users = await db.users.count_documents({})
