@@ -460,12 +460,13 @@ async def logout(request: Request, response: Response):
         await db.google_sessions.delete_one({"session_token": session_token})
         
         # Clear cookie
+        is_development = os.environ.get('CORS_ORIGINS', '*') == '*'
         response.delete_cookie(
             key="session_token",
             path="/",
-            secure=True,
+            secure=not is_development,
             httponly=True,
-            samesite="none"
+            samesite="lax" if is_development else "none"
         )
     
     return {"message": "Sesión cerrada correctamente"}
