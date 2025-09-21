@@ -46,11 +46,21 @@ const AuthProvider = ({ children }) => {
       // Clear URL fragment
       window.history.replaceState(null, null, window.location.pathname);
       
-      // Check session after setting cookie
-      await checkExistingSession();
+      // Get user info directly from the session data and backend
+      const userResponse = await axios.get(`${API}/check-session`);
+      if (userResponse.data.authenticated) {
+        setUser(userResponse.data.user);
+        console.log('Google login successful:', userResponse.data.user);
+      } else {
+        console.error('Failed to authenticate after Google login');
+        setLoading(false);
+      }
       
     } catch (error) {
       console.error('Error processing Google session:', error);
+      alert('Error al procesar el login con Google. Por favor intenta de nuevo.');
+      setLoading(false);
+    } finally {
       setLoading(false);
     }
   };
