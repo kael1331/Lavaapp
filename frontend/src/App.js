@@ -216,8 +216,20 @@ const Navigation = () => {
         </div>
         
         <div className="flex items-center space-x-4">
+          {user.picture && (
+            <img 
+              src={user.picture} 
+              alt="Foto de perfil" 
+              className="w-8 h-8 rounded-full"
+            />
+          )}
           <span className="text-sm">
             {user.nombre} ({user.rol})
+            {user.google_id && (
+              <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                Google
+              </span>
+            )}
           </span>
           <button 
             onClick={handleLogout}
