@@ -302,7 +302,7 @@ async def get_dashboard_stats(request: Request, current_user: User = Depends(get
 
 # User Management (Admin only)
 @api_router.get("/admin/users", response_model=List[UserResponse])
-async def get_all_users(admin_user: User = Depends(get_admin_user)):
+async def get_all_users(request: Request, admin_user: User = Depends(get_admin_user)):
     users_cursor = db.users.find({})
     users = await users_cursor.to_list(1000)
     return [UserResponse(**user) for user in users]
