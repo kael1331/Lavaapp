@@ -121,7 +121,20 @@ const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
+  const loginWithGoogle = () => {
+    const redirectUrl = encodeURIComponent(`${window.location.origin}/dashboard`);
+    window.location.href = `https://auth.emergentagent.com/?redirect=${redirectUrl}`;
+  };
+
+  const logout = async () => {
+    try {
+      // Call logout endpoint to clear session
+      await axios.post(`${API}/logout`);
+    } catch (error) {
+      console.error('Error during logout:', error);
+    }
+    
+    // Clear local storage and axios headers
     localStorage.removeItem('token');
     delete axios.defaults.headers.common['Authorization'];
     setUser(null);
