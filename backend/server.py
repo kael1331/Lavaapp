@@ -366,6 +366,122 @@ logger = logging.getLogger(__name__)
 async def shutdown_db_client():
     client.close()
 
+# Google OAuth Session Endpoint
+@api_router.get("/auth/session-data", response_model=SessionDataResponse)
+async def get_session_data(request: Request):
+    session_id = request.headers.get("X-Session-ID")
+    if not session_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Session ID requerido"
+        )
+    
+    # Call Emergent Auth API
+    try:
+        response = requests.get(
+            "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data",
+            headers={"X-Session-ID": session_id},
+            timeout=10
+        )
+        
+        if response.status_code != 200:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Session ID inválido"
+            )
+        
+        session_data = response.json()
+        
+        # Check if user exists, if not create them
+        user = await get_user_by_email(session_data["email"])
+        
+        if not user:
+            # Create new Google user with default role
+            google_user_data = GoogleUser(
+                email=session_data["email"],
+                nombre=session_data["name"],
+                google_id=session_data["id"],
+                picture=session_data.get("picture"),
+                rol=UserRole.EMPLEADO  # Default role for Google users
+            )
+            
+            new_user = User(
+                email=google_user_data.email,
+                nombre=google_user_data.nombre,
+                rol=google_user_data.rol,
+                google_id=google_user_data.google_id,
+                picture=google_user_data.picture,
+                password_hash=None  # No password for Google users
+            )
+            
+            user_dict = new_user.dict()
+            await db.users.insert_one(user_dict)
+            user = new_user
+        
+        # Create session in database
+        session_token = session_data["session_token"]
+        expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+        
+        google_session = GoogleSession(
+            user_id=user.id,
+            session_token=session_token,
+            expires_at=expires_at
+        )
+        
+        await db.google_sessions.insert_one(google_session.dict())
+        
+        return SessionDataResponse(**session_data)
+        
+    except requests.RequestException as e:
+        logger.error(f"Error calling Emergent Auth API: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error del servidor de autenticación"
+        )
+
+@api_router.post("/auth/set-session-cookie")
+async def set_session_cookie(response: Response, session_token: str):
+    """Set session cookie after Google OAuth"""
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        max_age=7 * 24 * 60 * 60,  # 7 days
+        path="/",
+        secure=True,
+        httponly=True,
+        samesite="none"
+    )
+    return {"message": "Cookie establecida correctamente"}
+
+@api_router.post("/logout")
+async def logout(request: Request, response: Response):
+    """Logout user and clear session"""
+    # Get session token from cookie
+    session_token = request.cookies.get("session_token")
+    
+    if session_token:
+        # Delete session from database
+        await db.google_sessions.delete_one({"session_token": session_token})
+        
+        # Clear cookie
+        response.delete_cookie(
+            key="session_token",
+            path="/",
+            secure=True,
+            httponly=True,
+            samesite="none"
+        )
+    
+    return {"message": "Sesión cerrada correctamente"}
+
+@api_router.get("/auth/check-session")
+async def check_session(request: Request):
+    """Check if user has valid session"""
+    user = await get_current_user_optional(request)
+    if user:
+        return {"authenticated": True, "user": UserResponse(**user.dict())}
+    return {"authenticated": False}
+
 # Health check
 @api_router.get("/health")
 async def health_check():
