@@ -139,7 +139,34 @@ async def authenticate_user(email: str, password: str):
         return False
     return user
 
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def get_session_user(session_token: str):
+    """Get user from session token"""
+    session_doc = await db.google_sessions.find_one({"session_token": session_token})
+    if not session_doc:
+        return None
+    
+    session = GoogleSession(**session_doc)
+    
+    # Check if session is expired
+    if session.expires_at < datetime.now(timezone.utc):
+        await db.google_sessions.delete_one({"session_token": session_token})
+        return None
+    
+    # Get user
+    user_doc = await db.users.find_one({"id": session.user_id})
+    if user_doc:
+        return User(**user_doc)
+    return None
+
+async def get_current_user(request: Request, credentials: HTTPAuthorizationCredentials = Depends(security)):
+    # First try to get user from session cookie (Google OAuth)
+    session_token = request.cookies.get("session_token")
+    if session_token:
+        user = await get_session_user(session_token)
+        if user:
+            return user
+    
+    # Fallback to JWT token (regular login)
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -158,6 +185,30 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     if user is None:
         raise credentials_exception
     return user
+
+async def get_current_user_optional(request: Request):
+    """Get current user without requiring authentication"""
+    # Try session cookie first
+    session_token = request.cookies.get("session_token")
+    if session_token:
+        user = await get_session_user(session_token)
+        if user:
+            return user
+    
+    # Try JWT from Authorization header
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        try:
+            token = auth_header.split(" ")[1]
+            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+            email: str = payload.get("sub")
+            if email:
+                user = await get_user_by_email(email)
+                return user
+        except JWTError:
+            pass
+    
+    return None
 
 async def get_admin_user(current_user: User = Depends(get_current_user)):
     if current_user.rol != UserRole.ADMIN:
