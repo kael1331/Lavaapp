@@ -292,7 +292,8 @@ async def login(login_data: LoginRequest):
     )
 
 @api_router.get("/me", response_model=UserResponse)
-async def get_current_user_info(request: Request, current_user: User = Depends(get_current_user)):
+async def get_current_user_info(request: Request):
+    current_user = await get_current_user(request)
     return UserResponse(**current_user.dict())
 
 # Dashboard Routes
