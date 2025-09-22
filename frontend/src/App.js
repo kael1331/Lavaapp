@@ -150,7 +150,8 @@ const AuthProvider = ({ children }) => {
 
   const loginWithGoogle = () => {
     const redirectUrl = encodeURIComponent(`${window.location.origin}/dashboard`);
-    window.location.href = `https://auth.emergentagent.com/?redirect=${redirectUrl}`;
+    // Try direct Google OAuth flow without intermediate page
+    window.location.href = `https://auth.emergentagent.com/oauth/google?redirect=${redirectUrl}`;
   };
 
   const logout = async () => {
