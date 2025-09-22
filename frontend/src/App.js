@@ -150,8 +150,8 @@ const AuthProvider = ({ children }) => {
 
   const loginWithGoogle = () => {
     const redirectUrl = encodeURIComponent(`${window.location.origin}/dashboard`);
-    // Try adding direct parameter to skip intermediate page
-    window.location.href = `https://auth.emergentagent.com/?redirect=${redirectUrl}&direct=true`;
+    // Try with prompt parameter to force account selection
+    window.location.href = `https://auth.emergentagent.com/?redirect=${redirectUrl}&prompt=select_account`;
   };
 
   const logout = async () => {
