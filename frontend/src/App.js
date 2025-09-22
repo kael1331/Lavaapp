@@ -150,26 +150,8 @@ const AuthProvider = ({ children }) => {
 
   const loginWithGoogle = () => {
     const redirectUrl = encodeURIComponent(`${window.location.origin}/dashboard`);
-    
-    // Open OAuth in new window for better control
-    const authWindow = window.open(
-      `https://auth.emergentagent.com/?redirect=${redirectUrl}`,
-      'googleAuth',
-      'width=500,height=600,scrollbars=yes,resizable=yes'
-    );
-    
-    // Check for redirect back to main window
-    const checkAuth = setInterval(() => {
-      try {
-        if (authWindow.closed) {
-          clearInterval(checkAuth);
-          // Check if we got redirected by checking URL or refreshing state
-          window.location.reload();
-        }
-      } catch (error) {
-        // Cross-origin error means user is still on auth page
-      }
-    }, 1000);
+    // Original URL - unfortunately can't auto-click due to cross-origin restrictions
+    window.location.href = `https://auth.emergentagent.com/?redirect=${redirectUrl}`;
   };
 
   const logout = async () => {
