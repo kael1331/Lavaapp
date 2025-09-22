@@ -148,7 +148,14 @@ async def get_session_user(session_token: str):
     session = GoogleSession(**session_doc)
     
     # Check if session is expired
-    if session.expires_at < datetime.now(timezone.utc):
+    current_time = datetime.now(timezone.utc)
+    session_expires = session.expires_at
+    
+    # Ensure both datetimes are timezone-aware for comparison
+    if session_expires.tzinfo is None:
+        session_expires = session_expires.replace(tzinfo=timezone.utc)
+    
+    if session_expires < current_time:
         await db.google_sessions.delete_one({"session_token": session_token})
         return None
     
