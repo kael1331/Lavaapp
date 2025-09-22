@@ -328,7 +328,8 @@ async def get_all_users(request: Request):
     return [UserResponse(**user) for user in users]
 
 @api_router.delete("/admin/users/{user_id}")
-async def delete_user(user_id: str, request: Request, admin_user: User = Depends(get_admin_user)):
+async def delete_user(user_id: str, request: Request):
+    admin_user = await get_admin_user(request)
     result = await db.users.delete_one({"id": user_id})
     if result.deleted_count == 0:
         raise HTTPException(
