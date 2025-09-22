@@ -358,7 +358,8 @@ async def toggle_user_status(user_id: str, request: Request):
 
 # Protected routes examples
 @api_router.get("/protected")
-async def protected_route(request: Request, current_user: User = Depends(get_current_user)):
+async def protected_route(request: Request):
+    current_user = await get_current_user(request)
     return {"message": f"Hola {current_user.nombre}, tienes acceso como {current_user.rol}"}
 
 @api_router.get("/admin-only")
