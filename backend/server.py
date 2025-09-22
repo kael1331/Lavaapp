@@ -363,7 +363,8 @@ async def protected_route(request: Request):
     return {"message": f"Hola {current_user.nombre}, tienes acceso como {current_user.rol}"}
 
 @api_router.get("/admin-only")
-async def admin_only_route(request: Request, admin_user: User = Depends(get_admin_user)):
+async def admin_only_route(request: Request):
+    admin_user = await get_admin_user(request)
     return {"message": "Solo los administradores pueden ver esto", "secret": "Información ultra secreta"}
 
 # Google OAuth Session Endpoint
