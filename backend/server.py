@@ -226,7 +226,8 @@ async def get_current_user_optional(request: Request):
     
     return None
 
-async def get_admin_user(request: Request, current_user: User = Depends(get_current_user)):
+async def get_admin_user(request: Request):
+    current_user = await get_current_user(request)
     if current_user.rol != UserRole.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
