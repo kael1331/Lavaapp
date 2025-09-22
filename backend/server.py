@@ -165,7 +165,7 @@ async def get_session_user(session_token: str):
         return User(**user_doc)
     return None
 
-async def get_current_user(request: Request, credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def get_current_user(request: Request):
     # First try to get user from session cookie (Google OAuth)
     session_token = request.cookies.get("session_token")
     if session_token:
@@ -173,15 +173,16 @@ async def get_current_user(request: Request, credentials: HTTPAuthorizationCrede
         if user:
             return user
     
-    # Fallback to JWT token (regular login) - only if credentials are provided
-    if credentials:
+    # Fallback to JWT token (regular login)
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header.startswith("Bearer "):
         credentials_exception = HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
         try:
-            token = credentials.credentials
+            token = auth_header.split(" ")[1]
             payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
             email: str = payload.get("sub")
             if email is None:
