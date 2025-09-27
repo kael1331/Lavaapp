@@ -220,8 +220,10 @@ const Navigation = () => {
     // Redirigir según el tipo de usuario
     if (user.rol === 'SUPER_ADMIN' || user.rol === 'ADMIN') {
       navigate('/admin-login');
+    } else if (user.rol === 'CLIENTE') {
+      navigate('/login'); // Clientes van al login de clientes
     } else {
-      navigate('/'); // Clientes van a la página principal
+      navigate('/'); // Fallback a página principal
     }
   };
 
