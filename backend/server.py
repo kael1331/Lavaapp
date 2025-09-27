@@ -1439,6 +1439,38 @@ async def activar_lavadero_directo(admin_id: str, request: Request):
         "vence": fecha_vencimiento.isoformat()
     }
 
+# Obtener credenciales para testing (Super Admin)
+@api_router.get("/superadmin/credenciales-testing")
+async def get_credenciales_testing(request: Request):
+    await get_super_admin_user(request)
+    
+    # Esta es una función especial solo para development/testing
+    # En producción debería ser removida por seguridad
+    
+    # Obtener todos los admins
+    admins_cursor = db.users.find({"rol": UserRole.ADMIN})
+    admins = await admins_cursor.to_list(1000)
+    
+    # Las contraseñas más comunes que usé en testing
+    common_passwords = ["admin123", "carlos123", "emp123", "test123"]
+    
+    result = []
+    for admin in admins:
+        # Para cada admin, probar las contraseñas comunes
+        plain_password = "contraseña_no_encontrada"
+        for pwd in common_passwords:
+            if admin.get("password_hash") and verify_password(pwd, admin["password_hash"]):
+                plain_password = pwd
+                break
+        
+        result.append({
+            "email": admin["email"],
+            "nombre": admin["nombre"],
+            "password": plain_password
+        })
+    
+    return result
+
 # Health check
 @api_router.get("/health")
 async def health_check():
