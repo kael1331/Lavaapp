@@ -658,7 +658,11 @@ async def get_dashboard_stats(request: Request):
         # Días restantes de suscripción
         dias_restantes = 0
         if lavadero.fecha_vencimiento:
-            diff = lavadero.fecha_vencimiento - datetime.now(timezone.utc)
+            # Ensure both datetimes are timezone-aware for comparison
+            fecha_vencimiento = lavadero.fecha_vencimiento
+            if fecha_vencimiento.tzinfo is None:
+                fecha_vencimiento = fecha_vencimiento.replace(tzinfo=timezone.utc)
+            diff = fecha_vencimiento - datetime.now(timezone.utc)
             dias_restantes = max(0, diff.days)
         
         return {
