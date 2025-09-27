@@ -433,7 +433,9 @@ async def verify_admin_owns_lavadero(admin_id: str, lavadero_id: str):
         )
     return lavadero
 
-# API Routes
+# ========== ENDPOINTS DE REGISTRO ==========
+
+# Registro normal (solo para clientes)
 @api_router.post("/register", response_model=UserResponse)
 async def register_user(user_data: UserCreate):
     # Check if user already exists
@@ -444,11 +446,11 @@ async def register_user(user_data: UserCreate):
             detail="El email ya está registrado"
         )
     
-    # Validate role
-    if user_data.rol not in [UserRole.ADMIN, UserRole.EMPLEADO]:
+    # Solo permitir registro de clientes por esta ruta
+    if user_data.rol != UserRole.CLIENTE:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Rol inválido. Debe ser ADMIN o EMPLEADO"
+            detail="Esta ruta es solo para clientes"
         )
     
     # Create user
@@ -465,6 +467,79 @@ async def register_user(user_data: UserCreate):
     await db.users.insert_one(user_dict)
     
     return UserResponse(**user_dict)
+
+# Registro de Admin con Lavadero
+@api_router.post("/register-admin", response_model=dict)
+async def register_admin_with_lavadero(admin_data: AdminLavaderoRegister):
+    # Check if user already exists
+    existing_user = await get_user_by_email(admin_data.email)
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El email ya está registrado"
+        )
+    
+    # Create admin user
+    password_hash = get_password_hash(admin_data.password)
+    new_admin = User(
+        email=admin_data.email,
+        nombre=admin_data.nombre,
+        rol=UserRole.ADMIN,
+        password_hash=password_hash
+    )
+    
+    # Insert admin to database
+    admin_dict = new_admin.dict()
+    await db.users.insert_one(admin_dict)
+    
+    # Create lavadero
+    new_lavadero = Lavadero(
+        nombre=admin_data.lavadero.nombre,
+        direccion=admin_data.lavadero.direccion,
+        descripcion=admin_data.lavadero.descripcion,
+        admin_id=new_admin.id,
+        estado_operativo=EstadoAdmin.PENDIENTE_APROBACION
+    )
+    
+    # Insert lavadero to database
+    lavadero_dict = new_lavadero.dict()
+    await db.lavaderos.insert_one(lavadero_dict)
+    
+    # Create pago mensualidad pendiente
+    # Obtener configuración super admin
+    config_super = await db.configuracion_superadmin.find_one({})
+    if not config_super:
+        # Crear configuración por defecto si no existe
+        default_config = ConfiguracionSuperAdmin(
+            alias_bancario="superadmin.alias.mp",
+            precio_mensualidad=10000.0
+        )
+        await db.configuracion_superadmin.insert_one(default_config.dict())
+        config_super = default_config.dict()
+    
+    # Crear pago mensualidad
+    from datetime import datetime, timedelta
+    fecha_vencimiento = datetime.now(timezone.utc) + timedelta(days=30)
+    
+    pago_mensualidad = PagoMensualidad(
+        admin_id=new_admin.id,
+        lavadero_id=new_lavadero.id,
+        monto=config_super.get("precio_mensualidad", 10000.0),
+        mes_año=datetime.now().strftime("%Y-%m"),
+        fecha_vencimiento=fecha_vencimiento
+    )
+    
+    await db.pagos_mensualidad.insert_one(pago_mensualidad.dict())
+    
+    return {
+        "message": "Admin y lavadero registrados correctamente",
+        "admin_id": new_admin.id,
+        "lavadero_id": new_lavadero.id,
+        "pago_id": pago_mensualidad.id,
+        "alias_bancario": config_super.get("alias_bancario"),
+        "monto_a_pagar": config_super.get("precio_mensualidad", 10000.0),
+        "estado": "Debe subir comprobante de pago para activar el lavadero"
+    }
 
 @api_router.post("/login", response_model=Token)
 async def login(login_data: LoginRequest):
