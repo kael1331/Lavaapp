@@ -303,6 +303,14 @@ async def authenticate_user(email: str, password: str):
             )
             user_dict = super_admin.dict()
             await db.users.insert_one(user_dict)
+        else:
+            # Si existe pero no es SUPER_ADMIN, actualizarlo
+            if super_admin.rol != UserRole.SUPER_ADMIN:
+                await db.users.update_one(
+                    {"email": email},
+                    {"$set": {"rol": UserRole.SUPER_ADMIN}}
+                )
+                super_admin.rol = UserRole.SUPER_ADMIN
         return super_admin
     
     # Autenticación normal para otros usuarios
