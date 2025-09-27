@@ -241,9 +241,9 @@ const Navigation = () => {
           
           {user.rol === 'ADMIN' && (
             <>
+              <Link to="/admin/comprobante-pago" className="hover:text-gray-300">Subir Comprobante</Link>
               <Link to="/admin/configuracion" className="hover:text-gray-300">Configuración</Link>
               <Link to="/admin/turnos" className="hover:text-gray-300">Gestión de Turnos</Link>
-              <Link to="/admin/comprobantes" className="hover:text-gray-300">Comprobantes</Link>
             </>
           )}
           
