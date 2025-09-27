@@ -1367,6 +1367,13 @@ async def crear_admin_superadmin(admin_data: AdminLavaderoRegister, request: Req
     admin_dict = new_admin.dict()
     await db.users.insert_one(admin_dict)
     
+    # Guardar credencial en tabla temporal para testing
+    await db.temp_credentials.insert_one({
+        "admin_email": admin_data.email,
+        "password": admin_data.password,
+        "created_at": datetime.now(timezone.utc)
+    })
+    
     # Create lavadero
     new_lavadero = Lavadero(
         nombre=admin_data.lavadero.nombre,
