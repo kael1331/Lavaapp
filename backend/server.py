@@ -551,6 +551,20 @@ async def login(login_data: LoginRequest):
             headers={"WWW-Authenticate": "Bearer"},
         )
     
+    # Verificar estado del admin si no es super admin
+    if user.rol == UserRole.ADMIN:
+        # Buscar el lavadero del admin
+        lavadero_doc = await db.lavaderos.find_one({"admin_id": user.id})
+        if lavadero_doc:
+            lavadero = Lavadero(**lavadero_doc)
+            # Verificar si está vencido
+            if lavadero.fecha_vencimiento and lavadero.fecha_vencimiento < datetime.now(timezone.utc):
+                lavadero.estado_operativo = EstadoAdmin.VENCIDO
+                await db.lavaderos.update_one(
+                    {"id": lavadero.id},
+                    {"$set": {"estado_operativo": EstadoAdmin.VENCIDO}}
+                )
+    
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": user.email}, expires_delta=access_token_expires
