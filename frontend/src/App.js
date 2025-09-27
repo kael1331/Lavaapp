@@ -120,15 +120,21 @@ const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
+      console.log('AuthContext: Realizando petición de login para:', email);
       const response = await axios.post(`${API}/login`, { email, password });
+      console.log('AuthContext: Respuesta del servidor:', response.data);
+      
       const { access_token, user: userData } = response.data;
       
       localStorage.setItem('token', access_token);
       axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
       setUser(userData);
       
+      console.log('AuthContext: Usuario establecido:', userData);
       return { success: true };
     } catch (error) {
+      console.error('AuthContext: Error en login:', error);
+      console.error('AuthContext: Detalles del error:', error.response?.data);
       return { 
         success: false, 
         error: error.response?.data?.detail || 'Error al iniciar sesión' 
