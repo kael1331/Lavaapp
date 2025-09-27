@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "El usuario reportó dos problemas específicos: 1) El botón de activación de lavadero debería ser de activación o desactivación permitiendo ponerlo en estado activo o pendiente, 2) En la sección del admin login que muestra las cuentas de admins aveces no encuentra la contraseña y dice: contraseña_no_encontrada"
+user_problem_statement: "TAREA ESPECÍFICA: Crear 2 nuevos administradores de lavaderos para testing usando el endpoint de Super Admin. Crear Admin 1: maría@lavaderocentro.com con Lavadero Centro, y Admin 2: juan@lavaderonorte.com con Lavadero Norte. Verificar que ambos se crean correctamente, están en estado PENDIENTE_APROBACION, las contraseñas aparecen en credenciales-testing, y ambos pueden hacer login correctamente."
 
 backend:
   - task: "Crear endpoint toggle para activar/desactivar lavadero"
