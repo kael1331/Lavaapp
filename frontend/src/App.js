@@ -1143,6 +1143,248 @@ const LavaderoLogin = () => {
   );
 };
 
+// Componente de Registro de Admin con Lavadero
+const RegisterAdminForm = ({ onSuccess }) => {
+  const [formData, setFormData] = useState({
+    // Datos del admin
+    email: '',
+    password: '',
+    nombre: '',
+    // Datos del lavadero
+    lavadero_nombre: '',
+    lavadero_direccion: '',
+    lavadero_descripcion: ''
+  });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [registrationResult, setRegistrationResult] = useState(null);
+  const [superAdminConfig, setSuperAdminConfig] = useState(null);
+
+  useEffect(() => {
+    fetchSuperAdminConfig();
+  }, []);
+
+  const fetchSuperAdminConfig = async () => {
+    try {
+      const response = await axios.get(`${API}/superadmin-config`);
+      setSuperAdminConfig(response.data);
+    } catch (error) {
+      console.error('Error fetching super admin config:', error);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      const requestData = {
+        email: formData.email,
+        password: formData.password,
+        nombre: formData.nombre,
+        lavadero: {
+          nombre: formData.lavadero_nombre,
+          direccion: formData.lavadero_direccion,
+          descripcion: formData.lavadero_descripcion
+        }
+      };
+
+      console.log('Registrando admin con lavadero:', requestData);
+      const response = await axios.post(`${API}/register-admin`, requestData);
+      console.log('Resultado del registro:', response.data);
+      
+      setRegistrationResult(response.data);
+    } catch (error) {
+      console.error('Error en registro:', error);
+      setError(error.response?.data?.detail || 'Error al registrar admin y lavadero');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBackToLogin = () => {
+    setRegistrationResult(null);
+    onSuccess();
+  };
+
+  if (registrationResult) {
+    return (
+      <div className="mt-8 space-y-6">
+        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
+          <h3 className="font-semibold">¡Registro Exitoso!</h3>
+          <p className="mt-2">{registrationResult.message}</p>
+        </div>
+
+        <div className="bg-blue-50 p-6 rounded-lg">
+          <h3 className="text-lg font-semibold text-blue-800 mb-4">Información de Pago</h3>
+          <div className="space-y-2 text-sm">
+            <p><strong>Alias Bancario:</strong> {registrationResult.alias_bancario}</p>
+            <p><strong>Monto a Pagar:</strong> ${registrationResult.monto_a_pagar}</p>
+            <p><strong>Estado:</strong> {registrationResult.estado}</p>
+          </div>
+        </div>
+
+        <div className="bg-yellow-50 p-4 rounded-md">
+          <h4 className="font-semibold text-yellow-800">Próximos Pasos:</h4>
+          <ol className="mt-2 text-sm text-yellow-700 list-decimal list-inside space-y-1">
+            <li>Realiza la transferencia al alias bancario indicado</li>
+            <li>Sube el comprobante de transferencia (próximamente)</li>
+            <li>Espera la aprobación del Super Admin</li>
+            <li>Una vez aprobado, podrás operar tu lavadero por 30 días</li>
+          </ol>
+        </div>
+
+        <div className="bg-red-50 p-4 rounded-md">
+          <p className="text-sm text-red-800">
+            <strong>Importante:</strong> Guarda esta información. Puedes hacer login con tu email y contraseña, 
+            pero tu lavadero estará en estado "PENDIENTE_APROBACION" hasta que subas el comprobante y sea aprobado.
+          </p>
+        </div>
+
+        <button
+          onClick={handleBackToLogin}
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
+        >
+          Continuar al Login
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-8 space-y-6">
+      <div className="text-center">
+        <h3 className="text-xl font-semibold text-gray-900">Registrar Nuevo Lavadero</h3>
+        <p className="mt-2 text-sm text-gray-600">
+          Completa la información para registrar tu lavadero en la plataforma
+        </p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+            {error}
+          </div>
+        )}
+
+        {/* Información del Administrador */}
+        <div className="bg-gray-50 p-4 rounded-lg">
+          <h4 className="font-semibold text-gray-800 mb-3">Información del Administrador</h4>
+          
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Nombre Completo *</label>
+              <input
+                type="text"
+                required
+                value={formData.nombre}
+                onChange={(e) => setFormData({...formData, nombre: e.target.value})}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Juan Pérez"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Email *</label>
+              <input
+                type="email"
+                required
+                value={formData.email}
+                onChange={(e) => setFormData({...formData, email: e.target.value})}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                placeholder="admin@milavadero.com"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Contraseña *</label>
+              <input
+                type="password"
+                required
+                value={formData.password}
+                onChange={(e) => setFormData({...formData, password: e.target.value})}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Mínimo 6 caracteres"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Información del Lavadero */}
+        <div className="bg-blue-50 p-4 rounded-lg">
+          <h4 className="font-semibold text-blue-800 mb-3">Información del Lavadero</h4>
+          
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Nombre del Lavadero *</label>
+              <input
+                type="text"
+                required
+                value={formData.lavadero_nombre}
+                onChange={(e) => setFormData({...formData, lavadero_nombre: e.target.value})}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Lavadero Norte"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Dirección *</label>
+              <input
+                type="text"
+                required
+                value={formData.lavadero_direccion}
+                onChange={(e) => setFormData({...formData, lavadero_direccion: e.target.value})}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Av. Principal 123, Ciudad"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Descripción (Opcional)</label>
+              <textarea
+                value={formData.lavadero_descripcion}
+                onChange={(e) => setFormData({...formData, lavadero_descripcion: e.target.value})}
+                rows={3}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Lavadero moderno con equipos de última generación..."
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Información de Pago */}
+        {superAdminConfig && (
+          <div className="bg-yellow-50 p-4 rounded-lg">
+            <h4 className="font-semibold text-yellow-800 mb-3">Información de Mensualidad</h4>
+            <div className="space-y-2 text-sm text-yellow-700">
+              <p><strong>Costo mensual:</strong> ${superAdminConfig.precio_mensualidad}</p>
+              <p><strong>Alias para transferencia:</strong> {superAdminConfig.alias_bancario}</p>
+              <p>Después del registro deberás transferir este monto y subir el comprobante para activar tu lavadero.</p>
+            </div>
+          </div>
+        )}
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md transition-colors disabled:opacity-50"
+        >
+          {loading ? 'Registrando...' : 'Registrar Lavadero'}
+        </button>
+
+        <button
+          type="button"
+          onClick={onSuccess}
+          className="w-full text-center text-gray-600 hover:text-gray-500"
+        >
+          ← Volver al login
+        </button>
+      </form>
+    </div>
+  );
+};
+
 // Login para Administradores
 const AdminLogin = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
