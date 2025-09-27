@@ -210,7 +210,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Verificar y corregir problema de comprobantes de pago para admins PENDIENTE_APROBACION"
+    - "Probar nuevo endpoint de subida de archivos para comprobantes de pago"
   stuck_tasks:
     - "Problema de routing en frontend - /superadmin/admins no muestra la página correcta"
   test_all: false
