@@ -396,10 +396,10 @@ const Login = () => {
         </form>
 
         <div className="mt-8 p-4 bg-blue-50 rounded-lg">
-          <h3 className="font-semibold text-blue-800">Cuentas de Prueba:</h3>
+          <h3 className="font-semibold text-blue-800">¿Eres administrador o cliente?</h3>
           <div className="mt-2 text-sm text-blue-700">
-            <p><strong>Admin:</strong> admin@demo.com / admin123</p>
-            <p><strong>Empleado:</strong> empleado@demo.com / emp123</p>
+            <p><strong>Administradores:</strong> <Link to="/admin-login" className="text-blue-600 underline">Inicia sesión aquí</Link></p>
+            <p><strong>Clientes:</strong> Selecciona tu lavadero desde la <Link to="/" className="text-blue-600 underline">página principal</Link></p>
           </div>
         </div>
       </div>
