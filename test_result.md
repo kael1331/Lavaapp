@@ -186,6 +186,21 @@ backend:
         agent: "testing"
         comment: "🎉 NUEVA FUNCIONALIDAD DE SUBIDA DE ARCHIVOS COMPLETAMENTE FUNCIONAL - Probé exhaustivamente el nuevo endpoint POST /comprobante-mensualidad con multipart/form-data: ✅ PRUEBA 1: Login como Juan (juan@lavaderonorte.com/juan123) exitoso, ✅ PRUEBA 2: Subida de archivo JPEG válido funciona perfectamente - archivo guardado en /app/uploads/comprobantes/ con nombre único, ✅ PRUEBA 3: Validaciones funcionan correctamente - archivos >5MB rechazados, tipos no soportados rechazados, ✅ PRUEBA 4: Almacenamiento persistente verificado - archivo físicamente presente en servidor, ✅ PRUEBA 5: URL generada accesible vía web, ✅ PRUEBA 6: Base de datos actualizada correctamente - comprobante creado con estado PENDIENTE. CAMBIOS IMPLEMENTADOS: Backend usa UploadFile de FastAPI, validación de tipos (JPEG/PNG/GIF/WEBP), validación de tamaño (máx 5MB), almacenamiento en /app/uploads/comprobantes/, generación de nombres únicos, URLs accesibles. RESULTADO: 7/7 pruebas exitosas (100% success rate)."
 
+  - task: "Verificar y corregir problema de visualización de imágenes de comprobantes en dashboard Super Admin"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "testing"
+        comment: "❌ PROBLEMA IDENTIFICADO - El endpoint GET /api/uploads/comprobantes/{filename} devolvía 404 Not Found para las imágenes de comprobantes. CAUSA RAÍZ: El endpoint estaba definido DESPUÉS de que el router fuera incluido en la aplicación FastAPI (línea 1855), por lo que no se registraba correctamente. Las imágenes existían físicamente en /app/uploads/comprobantes/ pero no eran accesibles vía API."
+      - working: true
+        agent: "testing"
+        comment: "✅ PROBLEMA RESUELTO COMPLETAMENTE - CORRECCIÓN APLICADA: Moví la definición del endpoint @api_router.get('/uploads/comprobantes/{filename}') ANTES de la línea app.include_router(api_router) para que se registre correctamente. VERIFICACIÓN EXHAUSTIVA: ✅ PRUEBA 1: GET /api/uploads/comprobantes/comprobante_6befb2b5-5fce-49c6-94cc-07a466934484_995cf9f6-2fb7-4b8d-bc1c-38419da2faee.jpg devuelve 200 OK con Content-Type: image/jpeg, ✅ PRUEBA 2: GET /api/uploads/comprobantes/comprobante_6befb2b5-5fce-49c6-94cc-07a466934484_2899fc71-1c9f-467e-8adb-8e06522263dd.jpg devuelve 200 OK con Content-Type: image/jpeg, ✅ PRUEBA 3: GET /superadmin/comprobantes-pendientes devuelve URLs correctas formato '/uploads/comprobantes/filename', ✅ PRUEBA 4: Construcción URL frontend ${API}${imagen_url} funciona perfectamente, ✅ PRUEBA 5: Archivos físicos accesibles (687KB y 169 bytes respectivamente). RESULTADO: 6/6 pruebas exitosas (100% success rate). Las imágenes de comprobantes ahora se visualizan correctamente en el dashboard del Super Admin."
+
 frontend:
   - task: "Modificar botón toggle para activar/desactivar lavaderos"
     implemented: true
