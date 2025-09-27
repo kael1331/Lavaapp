@@ -1464,20 +1464,7 @@ const AdminLogin = () => {
     // Si ya está logueado, redirigir al dashboard
     if (user) {
       navigate('/dashboard');
-      return;
     }
-
-    // Verificar que el acceso sea válido (desde selección de lavadero)
-    const isFromLavaderoSelection = sessionStorage.getItem('from_lavadero_selection');
-    
-    if (!isFromLavaderoSelection) {
-      // Si no viene de selección de lavadero, redirigir a home
-      navigate('/');
-      return;
-    }
-    
-    // Limpiar flag después de verificar
-    sessionStorage.removeItem('from_lavadero_selection');
   }, [user, navigate]);
 
   const handleSubmit = async (e) => {
