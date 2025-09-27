@@ -1532,6 +1532,316 @@ const AdminLogin = () => {
   );
 };
 
+// Componente para Subir Comprobante de Pago (Admin)
+const SubirComprobante = () => {
+  const { user } = useAuth();
+  const [pagoPendiente, setPagoPendiente] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [imagenUrl, setImagenUrl] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  useEffect(() => {
+    fetchPagoPendiente();
+  }, []);
+
+  const fetchPagoPendiente = async () => {
+    try {
+      const response = await axios.get(`${API}/admin/pago-pendiente`);
+      setPagoPendiente(response.data);
+    } catch (error) {
+      console.error('Error fetching pago pendiente:', error);
+      setError('Error al cargar información de pago');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubirComprobante = async (e) => {
+    e.preventDefault();
+    setUploading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const response = await axios.post(`${API}/comprobante-mensualidad`, {
+        imagen_url: imagenUrl
+      });
+      
+      setSuccess(response.data.message);
+      setImagenUrl('');
+      await fetchPagoPendiente(); // Refrescar datos
+    } catch (error) {
+      setError(error.response?.data?.detail || 'Error al subir comprobante');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="p-8">
+        <div className="text-center">Cargando información de pago...</div>
+      </div>
+    );
+  }
+
+  if (!pagoPendiente?.tiene_pago_pendiente) {
+    return (
+      <div className="p-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-8">Comprobante de Pago</h1>
+        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
+          <p>✅ No tienes pagos pendientes. Tu lavadero está al día.</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-8">
+      <h1 className="text-3xl font-bold text-gray-900 mb-8">Subir Comprobante de Pago</h1>
+
+      {/* Información del Pago */}
+      <div className="bg-blue-50 p-6 rounded-lg mb-6">
+        <h2 className="text-xl font-semibold text-blue-800 mb-4">Información de Pago Pendiente</h2>
+        <div className="space-y-2">
+          <p><strong>Monto:</strong> ${pagoPendiente.monto}</p>
+          <p><strong>Período:</strong> {pagoPendiente.mes_año}</p>
+          <p><strong>Fecha límite:</strong> {new Date(pagoPendiente.fecha_vencimiento).toLocaleDateString()}</p>
+        </div>
+      </div>
+
+      {pagoPendiente.tiene_comprobante ? (
+        // Ya tiene comprobante subido
+        <div className="bg-yellow-50 p-6 rounded-lg">
+          <h3 className="text-lg font-semibold text-yellow-800 mb-2">Estado del Comprobante</h3>
+          <div className="flex items-center space-x-2">
+            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+              pagoPendiente.estado_comprobante === 'PENDIENTE' 
+                ? 'bg-yellow-100 text-yellow-800'
+                : pagoPendiente.estado_comprobante === 'CONFIRMADO'
+                ? 'bg-green-100 text-green-800' 
+                : 'bg-red-100 text-red-800'
+            }`}>
+              {pagoPendiente.estado_comprobante}
+            </span>
+          </div>
+          
+          {pagoPendiente.estado_comprobante === 'PENDIENTE' && (
+            <p className="mt-2 text-sm text-yellow-700">
+              Tu comprobante está siendo revisado por el Super Admin. Te notificaremos cuando sea aprobado.
+            </p>
+          )}
+          
+          {pagoPendiente.estado_comprobante === 'CONFIRMADO' && (
+            <p className="mt-2 text-sm text-green-700">
+              ✅ Tu pago ha sido confirmado. Tu lavadero está activo.
+            </p>
+          )}
+          
+          {pagoPendiente.estado_comprobante === 'RECHAZADO' && (
+            <p className="mt-2 text-sm text-red-700">
+              ❌ Tu comprobante fue rechazado. Por favor sube un nuevo comprobante válido.
+            </p>
+          )}
+        </div>
+      ) : (
+        // Formulario para subir comprobante
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Subir Comprobante de Transferencia</h3>
+          
+          <form onSubmit={handleSubirComprobante} className="space-y-4">
+            {error && (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                {error}
+              </div>
+            )}
+            
+            {success && (
+              <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
+                {success}
+              </div>
+            )}
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                URL de la Imagen del Comprobante *
+              </label>
+              <input
+                type="url"
+                required
+                value={imagenUrl}
+                onChange={(e) => setImagenUrl(e.target.value)}
+                placeholder="https://ejemplo.com/mi-comprobante.jpg"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              />
+              <p className="mt-1 text-sm text-gray-500">
+                Sube tu imagen a un servicio como Imgur, Google Drive (enlace público) o similar, y pega aquí el enlace.
+              </p>
+            </div>
+
+            {imagenUrl && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Vista Previa:</label>
+                <img 
+                  src={imagenUrl} 
+                  alt="Vista previa del comprobante" 
+                  className="max-w-sm max-h-64 object-contain border border-gray-300 rounded"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                  }}
+                />
+              </div>
+            )}
+
+            <div className="bg-gray-50 p-4 rounded-md">
+              <h4 className="font-semibold text-gray-800 mb-2">Instrucciones:</h4>
+              <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
+                <li>El comprobante debe mostrar claramente el monto transferido</li>
+                <li>Debe incluir el alias bancario del destinatario</li>
+                <li>La imagen debe ser legible y de buena calidad</li>
+                <li>Formatos aceptados: JPG, PNG, PDF</li>
+              </ul>
+            </div>
+
+            <button
+              type="submit"
+              disabled={uploading || !imagenUrl}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors disabled:opacity-50"
+            >
+              {uploading ? 'Subiendo...' : 'Subir Comprobante'}
+            </button>
+          </form>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Componente para Revisar Comprobantes (Super Admin)
+const RevisarComprobantes = () => {
+  const [comprobantes, setComprobantes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [procesando, setProcesando] = useState(null);
+
+  useEffect(() => {
+    fetchComprobantes();
+  }, []);
+
+  const fetchComprobantes = async () => {
+    try {
+      const response = await axios.get(`${API}/superadmin/comprobantes-pendientes`);
+      setComprobantes(response.data);
+    } catch (error) {
+      console.error('Error fetching comprobantes:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAprobar = async (comprobanteId) => {
+    setProcesando(comprobanteId);
+    try {
+      await axios.post(`${API}/superadmin/aprobar-comprobante/${comprobanteId}`);
+      await fetchComprobantes(); // Refrescar lista
+    } catch (error) {
+      console.error('Error aprobando comprobante:', error);
+      alert('Error al aprobar comprobante');
+    } finally {
+      setProcesando(null);
+    }
+  };
+
+  const handleRechazar = async (comprobanteId) => {
+    const comentario = prompt('Ingresa el motivo del rechazo:');
+    if (!comentario) return;
+
+    setProcesando(comprobanteId);
+    try {
+      await axios.post(`${API}/superadmin/rechazar-comprobante/${comprobanteId}`, {
+        comentario
+      });
+      await fetchComprobantes(); // Refrescar lista
+    } catch (error) {
+      console.error('Error rechazando comprobante:', error);
+      alert('Error al rechazar comprobante');
+    } finally {
+      setProcesando(null);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="p-8">
+        <div className="text-center">Cargando comprobantes...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-8">
+      <h1 className="text-3xl font-bold text-gray-900 mb-8">Revisar Comprobantes de Pago</h1>
+
+      {comprobantes.length === 0 ? (
+        <div className="bg-gray-50 p-6 rounded-lg text-center">
+          <p className="text-gray-600">No hay comprobantes pendientes de revisión.</p>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {comprobantes.map((comprobante) => (
+            <div key={comprobante.comprobante_id} className="bg-white p-6 rounded-lg shadow border">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">{comprobante.lavadero_nombre}</h3>
+                  <p className="text-sm text-gray-600">Admin: {comprobante.admin_nombre} ({comprobante.admin_email})</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-lg font-bold text-green-600">${comprobante.monto}</p>
+                  <p className="text-sm text-gray-500">
+                    {new Date(comprobante.created_at).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Comprobante:</label>
+                <img 
+                  src={comprobante.imagen_url} 
+                  alt="Comprobante de pago" 
+                  className="max-w-md max-h-64 object-contain border border-gray-300 rounded"
+                  onError={(e) => {
+                    e.target.alt = 'Error al cargar imagen';
+                    e.target.className = 'text-red-500 text-sm p-4 border border-red-300 rounded';
+                  }}
+                />
+              </div>
+
+              <div className="flex space-x-4">
+                <button
+                  onClick={() => handleAprobar(comprobante.comprobante_id)}
+                  disabled={procesando === comprobante.comprobante_id}
+                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md transition-colors disabled:opacity-50"
+                >
+                  {procesando === comprobante.comprobante_id ? 'Procesando...' : 'Aprobar'}
+                </button>
+                
+                <button
+                  onClick={() => handleRechazar(comprobante.comprobante_id)}
+                  disabled={procesando === comprobante.comprobante_id}
+                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md transition-colors disabled:opacity-50"
+                >
+                  Rechazar
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Main App Component
 function App() {
   return (
