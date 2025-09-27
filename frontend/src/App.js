@@ -1465,8 +1465,36 @@ const AdminLogin = () => {
     // Si ya está logueado, redirigir al dashboard
     if (user) {
       navigate('/dashboard');
+    } else {
+      // Cargar credenciales de testing si no está logueado
+      fetchCredencialesAdmin();
     }
   }, [user, navigate]);
+
+  const fetchCredencialesAdmin = async () => {
+    try {
+      // Primero hacer login como super admin para obtener credenciales
+      const loginResponse = await axios.post(`${API}/login`, {
+        email: "kearcangel@gmail.com",
+        password: "K@#l1331"
+      });
+      
+      const token = loginResponse.data.access_token;
+      
+      const credencialesResponse = await axios.get(`${API}/superadmin/credenciales-testing`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      setCredencialesAdmin(credencialesResponse.data);
+    } catch (error) {
+      console.error('Error fetching credenciales:', error);
+      // Si falla, usar credenciales hardcodeadas básicas
+      setCredencialesAdmin([
+        { email: "carlos@lavaderosur.com", nombre: "Carlos", password: "carlos123" },
+        { email: "admin@lavadero1.com", nombre: "Juan Admin", password: "admin123" }
+      ]);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
