@@ -183,7 +183,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Modificar botón toggle para activar/desactivar lavaderos"
+    - "Crear 2 nuevos administradores para testing usando endpoint Super Admin"
   stuck_tasks:
     - "Problema de routing en frontend - /superadmin/admins no muestra la página correcta"
   test_all: false
