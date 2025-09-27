@@ -941,10 +941,17 @@ const AdminPanel = () => {
 const HomePage = () => {
   const [lavaderos, setLavaderos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
+    // Si ya está logueado, redirigir al dashboard
+    if (user) {
+      navigate('/dashboard');
+      return;
+    }
     fetchLavaderos();
-  }, []);
+  }, [user, navigate]);
 
   const fetchLavaderos = async () => {
     try {
