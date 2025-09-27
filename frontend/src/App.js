@@ -1137,11 +1137,15 @@ const AdminLogin = () => {
     setLoading(true);
     setError('');
 
+    console.log('AdminLogin: Intentando login con:', formData.email);
     const result = await login(formData.email, formData.password);
+    console.log('AdminLogin: Resultado del login:', result);
     
     if (result.success) {
+      console.log('AdminLogin: Login exitoso, navegando al dashboard...');
       navigate('/dashboard');
     } else {
+      console.error('AdminLogin: Error en login:', result.error);
       setError(result.error);
     }
     
