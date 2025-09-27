@@ -253,8 +253,10 @@ class ComprobantePagoMensualidad(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class ComprobantePagoMensualidadCreate(BaseModel):
-    pago_mensualidad_id: str
     imagen_url: str
+
+class RechazarComprobanteRequest(BaseModel):
+    comentario: str
 
 # Registro de Admin con Lavadero
 class AdminLavaderoRegister(BaseModel):
