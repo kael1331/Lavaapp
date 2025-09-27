@@ -1150,7 +1150,7 @@ async def aprobar_comprobante(comprobante_id: str, request: Request):
 
 # Rechazar comprobante (Super Admin)
 @api_router.post("/superadmin/rechazar-comprobante/{comprobante_id}")
-async def rechazar_comprobante(comprobante_id: str, comentario: str, request: Request):
+async def rechazar_comprobante(comprobante_id: str, rechazo_data: RechazarComprobanteRequest, request: Request):
     await get_super_admin_user(request)
     
     # Buscar comprobante
