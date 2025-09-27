@@ -1534,7 +1534,11 @@ async def get_configuracion_lavadero(request: Request):
         await db.configuracion_lavadero.insert_one(config_dict)
         return default_config.dict()
     
-    return config_doc
+    # Remove MongoDB ObjectId from the document
+    config_dict = dict(config_doc)
+    if '_id' in config_dict:
+        del config_dict['_id']
+    return config_dict
 
 # Actualizar configuración del lavadero (Admin)
 @api_router.put("/admin/configuracion")
