@@ -165,3 +165,5 @@ test_plan:
 agent_communication:
   - agent: "main"
     message: "Implementé los cambios solicitados por el usuario: 1) Creado endpoint toggle para cambiar estado de lavadero entre activo/pendiente, 2) Mejorado sistema de credenciales ampliando lista de contraseñas comunes y agregando tabla temporal. Frontend tiene problema de routing que necesita corrección."
+  - agent: "testing"
+    message: "✅ BACKEND TESTING COMPLETADO - Ambos endpoints funcionan correctamente: 1) /superadmin/toggle-lavadero/{admin_id} cambia estados bidireccional con respuesta completa, 2) /superadmin/credenciales-testing muestra contraseñas reales (2/3 admins con passwords reales vs 'contraseña_no_encontrada'). Autenticación Super Admin funcional. Problemas reportados por usuario RESUELTOS en backend."
