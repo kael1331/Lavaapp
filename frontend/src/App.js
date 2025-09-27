@@ -2351,14 +2351,16 @@ const GestionAdmins = () => {
                             Editar
                           </button>
                           
-                          {admin.lavadero.estado_operativo !== 'ACTIVO' && (
-                            <button
-                              onClick={() => handleActivarLavadero(admin.admin_id)}
-                              className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm"
-                            >
-                              Activar Lavadero
-                            </button>
-                          )}
+                          <button
+                            onClick={() => handleToggleLavadero(admin)}
+                            className={`px-3 py-1 rounded text-sm text-white ${
+                              admin.lavadero.estado_operativo === 'ACTIVO'
+                                ? 'bg-orange-600 hover:bg-orange-700'
+                                : 'bg-green-600 hover:bg-green-700'
+                            }`}
+                          >
+                            {admin.lavadero.estado_operativo === 'ACTIVO' ? 'Desactivar' : 'Activar'} Lavadero
+                          </button>
                           
                           <button
                             onClick={() => handleDelete(admin.admin_id)}
