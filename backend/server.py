@@ -1495,6 +1495,214 @@ async def toggle_lavadero_estado(admin_id: str, request: Request):
     
     return response_data
 
+# ========== ENDPOINTS DE CONFIGURACIÓN DE LAVADERO (ADMIN) ==========
+
+# Obtener configuración del lavadero (Admin)
+@api_router.get("/admin/configuracion")
+async def get_configuracion_lavadero(request: Request):
+    current_user = await get_current_user(request)
+    
+    if current_user.rol != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Solo los administradores pueden acceder a esta configuración"
+        )
+    
+    # Buscar lavadero del admin
+    lavadero_doc = await db.lavaderos.find_one({"admin_id": current_user.id})
+    if not lavadero_doc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Lavadero no encontrado"
+        )
+    
+    # Buscar configuración existente
+    config_doc = await db.configuracion_lavadero.find_one({"lavadero_id": lavadero_doc["id"]})
+    
+    if not config_doc:
+        # Crear configuración por defecto si no existe
+        default_config = ConfiguracionLavadero(
+            lavadero_id=lavadero_doc["id"],
+            hora_apertura="08:00",
+            hora_cierre="18:00",
+            duracion_turno_minutos=60,
+            dias_laborales=[1, 2, 3, 4, 5],  # Lunes a Viernes
+            alias_bancario="lavadero.alias.mp",
+            precio_turno=5000.0
+        )
+        config_dict = default_config.dict()
+        await db.configuracion_lavadero.insert_one(config_dict)
+        return default_config.dict()
+    
+    return config_doc
+
+# Actualizar configuración del lavadero (Admin)
+@api_router.put("/admin/configuracion")
+async def update_configuracion_lavadero(config_data: ConfiguracionLavaderoCreate, request: Request):
+    current_user = await get_current_user(request)
+    
+    if current_user.rol != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Solo los administradores pueden modificar la configuración"
+        )
+    
+    # Buscar lavadero del admin
+    lavadero_doc = await db.lavaderos.find_one({"admin_id": current_user.id})
+    if not lavadero_doc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Lavadero no encontrado"
+        )
+    
+    # Validaciones básicas
+    if not (0 <= config_data.duracion_turno_minutos <= 480):  # Max 8 horas
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="La duración del turno debe estar entre 1 y 480 minutos"
+        )
+    
+    if not all(1 <= dia <= 7 for dia in config_data.dias_laborales):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Los días laborales deben estar entre 1 (Lunes) y 7 (Domingo)"
+        )
+    
+    # Actualizar configuración
+    update_data = {
+        "$set": {
+            "hora_apertura": config_data.hora_apertura,
+            "hora_cierre": config_data.hora_cierre,
+            "duracion_turno_minutos": config_data.duracion_turno_minutos,
+            "dias_laborales": config_data.dias_laborales,
+            "alias_bancario": config_data.alias_bancario,
+            "precio_turno": config_data.precio_turno
+        }
+    }
+    
+    result = await db.configuracion_lavadero.update_one(
+        {"lavadero_id": lavadero_doc["id"]},
+        update_data
+    )
+    
+    if result.modified_count == 0:
+        # Si no existe configuración, crear nueva
+        nueva_config = ConfiguracionLavadero(
+            lavadero_id=lavadero_doc["id"],
+            **config_data.dict()
+        )
+        await db.configuracion_lavadero.insert_one(nueva_config.dict())
+    
+    return {"message": "Configuración actualizada exitosamente"}
+
+# Obtener días no laborales (Admin)
+@api_router.get("/admin/dias-no-laborales")
+async def get_dias_no_laborales(request: Request):
+    current_user = await get_current_user(request)
+    
+    if current_user.rol != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Solo los administradores pueden acceder a esta información"
+        )
+    
+    # Buscar lavadero del admin
+    lavadero_doc = await db.lavaderos.find_one({"admin_id": current_user.id})
+    if not lavadero_doc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Lavadero no encontrado"
+        )
+    
+    # Obtener días no laborales del lavadero
+    dias_cursor = db.dias_no_laborales.find({"lavadero_id": lavadero_doc["id"]})
+    dias = await dias_cursor.to_list(1000)
+    
+    return dias
+
+# Agregar día no laboral (Admin)
+@api_router.post("/admin/dias-no-laborales")
+async def add_dia_no_laboral(dia_data: DiaNoLaboralCreate, request: Request):
+    current_user = await get_current_user(request)
+    
+    if current_user.rol != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Solo los administradores pueden agregar días no laborales"
+        )
+    
+    # Buscar lavadero del admin
+    lavadero_doc = await db.lavaderos.find_one({"admin_id": current_user.id})
+    if not lavadero_doc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Lavadero no encontrado"
+        )
+    
+    # Verificar que la fecha no esté en el pasado
+    fecha_inicio_dia = dia_data.fecha.replace(hour=0, minute=0, second=0, microsecond=0)
+    if fecha_inicio_dia < datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No se pueden marcar fechas pasadas como no laborales"
+        )
+    
+    # Verificar si ya existe ese día
+    existing_dia = await db.dias_no_laborales.find_one({
+        "lavadero_id": lavadero_doc["id"],
+        "fecha": fecha_inicio_dia
+    })
+    
+    if existing_dia:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Este día ya está marcado como no laboral"
+        )
+    
+    # Crear nuevo día no laboral
+    nuevo_dia = DiaNoLaboral(
+        lavadero_id=lavadero_doc["id"],
+        fecha=fecha_inicio_dia,
+        motivo=dia_data.motivo
+    )
+    
+    await db.dias_no_laborales.insert_one(nuevo_dia.dict())
+    
+    return {"message": "Día no laboral agregado exitosamente", "dia": nuevo_dia.dict()}
+
+# Eliminar día no laboral (Admin)
+@api_router.delete("/admin/dias-no-laborales/{dia_id}")
+async def delete_dia_no_laboral(dia_id: str, request: Request):
+    current_user = await get_current_user(request)
+    
+    if current_user.rol != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Solo los administradores pueden eliminar días no laborales"
+        )
+    
+    # Buscar lavadero del admin
+    lavadero_doc = await db.lavaderos.find_one({"admin_id": current_user.id})
+    if not lavadero_doc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Lavadero no encontrado"
+        )
+    
+    # Eliminar día no laboral
+    result = await db.dias_no_laborales.delete_one({
+        "id": dia_id,
+        "lavadero_id": lavadero_doc["id"]
+    })
+    
+    if result.deleted_count == 0:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Día no laboral no encontrado"
+        )
+    
+    return {"message": "Día no laboral eliminado exitosamente"}
+
 # Obtener credenciales para testing (Super Admin)
 @api_router.get("/superadmin/credenciales-testing")
 async def get_credenciales_testing(request: Request):
