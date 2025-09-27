@@ -1698,6 +1698,60 @@ def main():
     else:
         print("❌ Cannot test file upload functionality - Super Admin login failed")
 
+    # SPECIFIC TASK: Test image serving for comprobantes
+    print("\n📋 SPECIFIC TASK: TEST IMAGE SERVING FOR COMPROBANTES")
+    print("🎯 Task: Verify image display functionality in Super Admin dashboard")
+    
+    if super_admin_success and super_admin_token:
+        image_results = tester.test_image_serving_for_comprobantes(super_admin_token)
+        
+        # Summary of image serving testing results
+        print("\n📊 IMAGE SERVING TESTING SUMMARY:")
+        print("=" * 50)
+        print(f"✅ Super Admin Login: {image_results['super_admin_login']}")
+        print(f"✅ Image Endpoint Works: {image_results['image_endpoint_works']}")
+        print(f"✅ Comprobantes Pendientes Works: {image_results['comprobantes_pendientes_works']}")
+        print(f"✅ Image URLs Correct: {image_results['image_urls_correct']}")
+        print(f"✅ Actual Files Accessible: {image_results['actual_files_accessible']}")
+        print(f"✅ Content Type Correct: {image_results['content_type_correct']}")
+        
+        # Calculate image serving test success rate
+        image_checks = [
+            image_results['super_admin_login'],
+            image_results['image_endpoint_works'],
+            image_results['comprobantes_pendientes_works'],
+            image_results['image_urls_correct'],
+            image_results['actual_files_accessible'],
+            image_results['content_type_correct']
+        ]
+        
+        image_success_count = sum(image_checks)
+        image_total = len(image_checks)
+        image_success_rate = (image_success_count / image_total) * 100
+        
+        print(f"\n🎯 IMAGE SERVING TEST SUCCESS RATE: {image_success_count}/{image_total} ({image_success_rate:.1f}%)")
+        
+        if image_success_rate == 100:
+            print("🎉 IMAGE SERVING FUNCTIONALITY WORKING PERFECTLY!")
+            print("   ✅ Image serving endpoint /api/uploads/comprobantes/{filename} works")
+            print("   ✅ Comprobantes pendientes endpoint returns correct data")
+            print("   ✅ Image URLs are correctly formatted")
+            print("   ✅ Actual uploaded files are accessible")
+            print("   ✅ Correct content-type headers returned")
+            print("   ✅ Frontend URL construction pattern ${API}${imagen_url} works")
+        else:
+            print("⚠️  IMAGE SERVING FUNCTIONALITY HAS ISSUES")
+            failed_image_checks = []
+            if not image_results['super_admin_login']: failed_image_checks.append("Super Admin login")
+            if not image_results['image_endpoint_works']: failed_image_checks.append("Image endpoint")
+            if not image_results['comprobantes_pendientes_works']: failed_image_checks.append("Comprobantes pendientes")
+            if not image_results['image_urls_correct']: failed_image_checks.append("Image URL format")
+            if not image_results['actual_files_accessible']: failed_image_checks.append("File accessibility")
+            if not image_results['content_type_correct']: failed_image_checks.append("Content-type headers")
+            print(f"   ❌ Issues: {', '.join(failed_image_checks)}")
+    else:
+        print("❌ Cannot test image serving functionality - Super Admin login failed")
+
     # SPECIFIC TASK: Create 2 new admins for testing
     print("\n📋 SPECIFIC TASK: CREATE 2 NEW ADMINS FOR TESTING")
     print("🎯 Task: Create María and Juan with their lavaderos for comprehensive testing")
