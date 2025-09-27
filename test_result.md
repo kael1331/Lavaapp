@@ -147,6 +147,18 @@ backend:
         agent: "testing"
         comment: "✅ NUEVOS ENDPOINTS DE CONFIGURACIÓN FUNCIONANDO PERFECTAMENTE - Probados todos los endpoints solicitados: 1) GET /admin/configuracion (obtiene configuración, crea por defecto si no existe), 2) PUT /admin/configuracion (actualiza configuración con valores de prueba), 3) GET /admin/dias-no-laborales (obtiene días no laborales), 4) POST /admin/dias-no-laborales (agrega día no laboral), 5) DELETE /admin/dias-no-laborales/{dia_id} (elimina día no laboral). AUTENTICACIÓN: ✅ Admin regular (carlos@lavaderosur.com/carlos123) puede acceder a todos los endpoints /admin/, ✅ Super Admin (kearcangel@gmail.com) correctamente bloqueado de endpoints /admin/ (403 Forbidden). CORRECCIÓN APLICADA: Solucioné error 500 de serialización ObjectId en endpoints GET que devolvían documentos MongoDB sin procesar."
 
+  - task: "Crear 2 nuevos administradores para testing usando endpoint Super Admin"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "🎯 TAREA ESPECÍFICA COMPLETADA AL 100% - Creados exitosamente 2 nuevos admins para testing: ✅ Admin 1: María González (maria@lavaderocentro.com/maria123) con Lavadero Centro - ID: 890e07da-cbb3-4c3e-add8-62029d47a5a8, ✅ Admin 2: Juan Pérez (juan@lavaderonorte.com/juan123) con Lavadero Norte - ID: 6befb2b5-5fce-49c6-94cc-07a466934484. VERIFICACIONES COMPLETADAS: ✅ Ambos lavaderos creados en estado PENDIENTE_APROBACION, ✅ Contraseñas aparecen correctamente en /superadmin/credenciales-testing (maria123, juan123), ✅ Ambos admins pueden hacer login exitosamente, ✅ Total de 3 admins disponibles para testing (Carlos + María + Juan), ✅ OPCIONAL: Activado lavadero de María usando toggle para variedad de estados (ACTIVO vs PENDIENTE). OBJETIVO CUMPLIDO: Sistema listo para testing completo con múltiples admins y diferentes estados de lavaderos."
+
 frontend:
   - task: "Modificar botón toggle para activar/desactivar lavaderos"
     implemented: true
