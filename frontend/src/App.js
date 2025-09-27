@@ -663,19 +663,33 @@ const Dashboard = () => {
       <div className="mt-8 bg-white p-6 rounded-lg shadow">
         <h2 className="text-xl font-semibold mb-4">Acciones Disponibles</h2>
         <div className="space-y-2">
-          {user.rol === 'ADMIN' ? (
+          {user.rol === 'SUPER_ADMIN' ? (
             <>
-              <p className="text-green-600">✅ Ver y gestionar todos los usuarios</p>
-              <p className="text-green-600">✅ Acceso a configuraciones del sistema</p>
-              <p className="text-green-600">✅ Ver estadísticas completas</p>
-              <p className="text-green-600">✅ Eliminar y modificar usuarios</p>
+              <p className="text-green-600">✅ Gestionar todos los lavaderos y administradores</p>
+              <p className="text-green-600">✅ Aprobar o rechazar comprobantes de pago</p>
+              <p className="text-green-600">✅ Activar/Bloquear lavaderos según pagos</p>
+              <p className="text-green-600">✅ Ver estadísticas globales del sistema</p>
+              <p className="text-green-600">✅ Control total de operaciones y mensualidades</p>
+            </>
+          ) : user.rol === 'ADMIN' ? (
+            <>
+              <p className="text-blue-600">✅ Configurar horarios y precios de mi lavadero</p>
+              <p className="text-blue-600">✅ Gestionar turnos y comprobantes de clientes</p>
+              <p className="text-blue-600">✅ Ver estadísticas de mi lavadero</p>
+              <p className="text-blue-600">✅ Renovar mensualidad cuando sea necesario</p>
+              {stats?.estado_operativo === 'PENDIENTE_APROBACION' && (
+                <p className="text-red-600">❌ Pendiente de aprobación - debe subir comprobante de pago</p>
+              )}
+              {stats?.estado_operativo === 'VENCIDO' && (
+                <p className="text-red-600">❌ Suscripción vencida - debe renovar mensualidad</p>
+              )}
             </>
           ) : (
             <>
-              <p className="text-blue-600">✅ Ver mi perfil personal</p>
-              <p className="text-blue-600">✅ Ver mis tareas asignadas</p>
-              <p className="text-red-600">❌ No puede gestionar otros usuarios</p>
-              <p className="text-red-600">❌ No puede acceder a configuraciones</p>
+              <p className="text-blue-600">✅ Reservar turnos en lavaderos disponibles</p>
+              <p className="text-blue-600">✅ Ver mis turnos confirmados y pendientes</p>
+              <p className="text-blue-600">✅ Cancelar turnos con anticipación</p>
+              <p className="text-blue-600">✅ Subir comprobantes de pago</p>
             </>
           )}
         </div>
