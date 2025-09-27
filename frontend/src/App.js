@@ -1604,17 +1604,41 @@ const AdminLogin = () => {
           <RegisterAdminForm onSuccess={() => setShowRegister(false)} />
         )}
 
-        {/* Información para Super Admin */}
-        <div className="mt-8 p-4 bg-gray-50 rounded-lg">
-          <h3 className="font-semibold text-gray-800">Super Administrador:</h3>
-          <div className="mt-2 text-sm text-gray-700">
-            <p>Email: kearcangel@gmail.com</p>
-            <p>Contraseña: K@#l1331</p>
+        {/* Información para Testing */}
+        <div className="mt-8 space-y-4">
+          {/* Super Admin */}
+          <div className="p-4 bg-blue-50 rounded-lg">
+            <h3 className="font-semibold text-blue-800">Super Administrador:</h3>
+            <div className="mt-2 text-sm text-blue-700">
+              <p><strong>Email:</strong> kearcangel@gmail.com</p>
+              <p><strong>Contraseña:</strong> K@#l1331</p>
+            </div>
           </div>
-          <div className="mt-3 text-xs text-gray-500">
-            <p>• <strong>Super Admin:</strong> Gestiona todos los lavaderos y administradores</p>
-            <p>• <strong>Admin:</strong> Dueño de lavadero (se registra pagando mensualidad)</p>
-            <p>• <strong>Cliente:</strong> Usuario que reserva turnos en lavaderos</p>
+
+          {/* Administradores */}
+          {credencialesAdmin.length > 0 && (
+            <div className="p-4 bg-green-50 rounded-lg">
+              <h3 className="font-semibold text-green-800">Administradores de Lavaderos:</h3>
+              <div className="mt-2 space-y-2">
+                {credencialesAdmin.map((admin, index) => (
+                  <div key={index} className="text-sm text-green-700">
+                    <p><strong>{admin.nombre}:</strong></p>
+                    <p className="ml-2">Email: {admin.email}</p>
+                    <p className="ml-2">Contraseña: {admin.password}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* Información de Roles */}
+          <div className="p-4 bg-gray-50 rounded-lg">
+            <h3 className="font-semibold text-gray-800">Información del Sistema:</h3>
+            <div className="mt-2 text-xs text-gray-600 space-y-1">
+              <p>• <strong>Super Admin:</strong> Gestiona todos los lavaderos y administradores</p>
+              <p>• <strong>Admin:</strong> Dueño de lavadero (paga mensualidad y gestiona su negocio)</p>
+              <p>• <strong>Cliente:</strong> Usuario que reserva turnos en lavaderos específicos</p>
+            </div>
           </div>
         </div>
       </div>
