@@ -409,6 +409,261 @@ class AuthenticationAPITester:
         
         return success1 and success2 and success3
 
+    # ========== SPECIFIC TASK: CREATE 2 NEW ADMINS FOR TESTING ==========
+    
+    def test_create_two_new_admins_for_testing(self, super_admin_token):
+        """
+        SPECIFIC TASK: Create 2 new admin users with their lavaderos for testing
+        
+        Requirements:
+        1. Create Admin 1: maria@lavaderocentro.com with Lavadero Centro
+        2. Create Admin 2: juan@lavaderonorte.com with Lavadero Norte  
+        3. Verify both admins created correctly
+        4. Verify both lavaderos in PENDIENTE_APROBACION state
+        5. Verify passwords appear in credenciales-testing
+        6. Verify both admins can login
+        7. Optionally activate one lavadero using toggle
+        """
+        print("\n🎯 SPECIFIC TASK: Creating 2 new admins for testing...")
+        print("=" * 60)
+        
+        results = {
+            'admin1_created': False,
+            'admin2_created': False,
+            'admin1_id': None,
+            'admin2_id': None,
+            'admin1_login': False,
+            'admin2_login': False,
+            'passwords_in_credentials': False,
+            'lavaderos_pending': False,
+            'toggle_test': False
+        }
+        
+        # Step 1: Create Admin 1 - María González
+        print("\n1️⃣ Creating Admin 1: María González (maria@lavaderocentro.com)...")
+        admin1_data = {
+            "email": "maria@lavaderocentro.com",
+            "password": "maria123",
+            "nombre": "María González",
+            "lavadero": {
+                "nombre": "Lavadero Centro",
+                "direccion": "Av. Corrientes 1234, Centro",
+                "descripcion": "Lavadero en el centro de la ciudad, servicio express"
+            }
+        }
+        
+        success1, response1 = self.run_test(
+            "Create Admin 1 - María González",
+            "POST",
+            "superadmin/crear-admin",
+            200,
+            data=admin1_data,
+            token=super_admin_token
+        )
+        
+        if success1 and isinstance(response1, dict) and 'admin_id' in response1:
+            results['admin1_created'] = True
+            results['admin1_id'] = response1['admin_id']
+            print(f"✅ Admin 1 created successfully - ID: {results['admin1_id']}")
+            print(f"   Lavadero ID: {response1.get('lavadero_id')}")
+            print(f"   Estado: {response1.get('estado')}")
+        else:
+            print("❌ Admin 1 creation failed")
+            return results
+        
+        # Step 2: Create Admin 2 - Juan Pérez
+        print("\n2️⃣ Creating Admin 2: Juan Pérez (juan@lavaderonorte.com)...")
+        admin2_data = {
+            "email": "juan@lavaderonorte.com",
+            "password": "juan123", 
+            "nombre": "Juan Pérez",
+            "lavadero": {
+                "nombre": "Lavadero Norte",
+                "direccion": "Calle Norte 567, Zona Norte",
+                "descripcion": "Lavadero familiar en zona norte, atención personalizada"
+            }
+        }
+        
+        success2, response2 = self.run_test(
+            "Create Admin 2 - Juan Pérez",
+            "POST",
+            "superadmin/crear-admin",
+            200,
+            data=admin2_data,
+            token=super_admin_token
+        )
+        
+        if success2 and isinstance(response2, dict) and 'admin_id' in response2:
+            results['admin2_created'] = True
+            results['admin2_id'] = response2['admin_id']
+            print(f"✅ Admin 2 created successfully - ID: {results['admin2_id']}")
+            print(f"   Lavadero ID: {response2.get('lavadero_id')}")
+            print(f"   Estado: {response2.get('estado')}")
+        else:
+            print("❌ Admin 2 creation failed")
+            return results
+        
+        # Step 3: Verify both admins appear in admin list with PENDIENTE_APROBACION
+        print("\n3️⃣ Verifying admins appear in admin list...")
+        success_list, admins_data = self.run_test(
+            "Get All Admins - Verify new admins",
+            "GET",
+            "superadmin/admins",
+            200,
+            token=super_admin_token
+        )
+        
+        if success_list and isinstance(admins_data, list):
+            maria_found = False
+            juan_found = False
+            
+            for admin in admins_data:
+                if admin.get('email') == 'maria@lavaderocentro.com':
+                    maria_found = True
+                    lavadero_estado = admin.get('lavadero', {}).get('estado_operativo')
+                    print(f"✅ María found - Estado lavadero: {lavadero_estado}")
+                    if lavadero_estado == 'PENDIENTE_APROBACION':
+                        print("✅ María's lavadero correctly in PENDIENTE_APROBACION state")
+                    else:
+                        print(f"⚠️  María's lavadero in unexpected state: {lavadero_estado}")
+                
+                elif admin.get('email') == 'juan@lavaderonorte.com':
+                    juan_found = True
+                    lavadero_estado = admin.get('lavadero', {}).get('estado_operativo')
+                    print(f"✅ Juan found - Estado lavadero: {lavadero_estado}")
+                    if lavadero_estado == 'PENDIENTE_APROBACION':
+                        print("✅ Juan's lavadero correctly in PENDIENTE_APROBACION state")
+                    else:
+                        print(f"⚠️  Juan's lavadero in unexpected state: {lavadero_estado}")
+            
+            if maria_found and juan_found:
+                results['lavaderos_pending'] = True
+                print("✅ Both admins found in admin list with correct lavadero states")
+            else:
+                print(f"❌ Admins not found - María: {maria_found}, Juan: {juan_found}")
+        else:
+            print("❌ Failed to get admin list")
+        
+        # Step 4: Verify passwords appear in credenciales-testing
+        print("\n4️⃣ Verifying passwords appear in credenciales-testing...")
+        success_cred, cred_data = self.run_test(
+            "Get Credenciales Testing - Verify new passwords",
+            "GET",
+            "superadmin/credenciales-testing",
+            200,
+            token=super_admin_token
+        )
+        
+        if success_cred and isinstance(cred_data, list):
+            maria_password_found = False
+            juan_password_found = False
+            
+            for cred in cred_data:
+                if cred.get('email') == 'maria@lavaderocentro.com':
+                    password = cred.get('password')
+                    if password == 'maria123':
+                        maria_password_found = True
+                        print("✅ María's password correctly found: maria123")
+                    else:
+                        print(f"⚠️  María's password unexpected: {password}")
+                
+                elif cred.get('email') == 'juan@lavaderonorte.com':
+                    password = cred.get('password')
+                    if password == 'juan123':
+                        juan_password_found = True
+                        print("✅ Juan's password correctly found: juan123")
+                    else:
+                        print(f"⚠️  Juan's password unexpected: {password}")
+            
+            if maria_password_found and juan_password_found:
+                results['passwords_in_credentials'] = True
+                print("✅ Both passwords correctly appear in credenciales-testing")
+            else:
+                print(f"❌ Passwords not found - María: {maria_password_found}, Juan: {juan_password_found}")
+        else:
+            print("❌ Failed to get credenciales-testing")
+        
+        # Step 5: Test login for both new admins
+        print("\n5️⃣ Testing login for both new admins...")
+        
+        # Test María's login
+        print("\n   Testing María's login...")
+        maria_login_success, maria_token, maria_user = self.test_login(
+            "maria@lavaderocentro.com", "maria123", "María González"
+        )
+        
+        if maria_login_success:
+            results['admin1_login'] = True
+            print("✅ María can login successfully")
+        else:
+            print("❌ María login failed")
+        
+        # Test Juan's login
+        print("\n   Testing Juan's login...")
+        juan_login_success, juan_token, juan_user = self.test_login(
+            "juan@lavaderonorte.com", "juan123", "Juan Pérez"
+        )
+        
+        if juan_login_success:
+            results['admin2_login'] = True
+            print("✅ Juan can login successfully")
+        else:
+            print("❌ Juan login failed")
+        
+        # Step 6: Optional - Activate one lavadero using toggle for variety
+        print("\n6️⃣ Optional: Activating María's lavadero using toggle for testing variety...")
+        if results['admin1_id']:
+            toggle_success, toggle_data = self.run_test(
+                f"Toggle María's Lavadero (Activate for variety)",
+                "POST",
+                f"superadmin/toggle-lavadero/{results['admin1_id']}",
+                200,
+                token=super_admin_token
+            )
+            
+            if toggle_success and isinstance(toggle_data, dict):
+                estado_anterior = toggle_data.get('estado_anterior')
+                estado_nuevo = toggle_data.get('estado_nuevo')
+                print(f"✅ Toggle successful: {estado_anterior} -> {estado_nuevo}")
+                
+                if estado_nuevo == 'ACTIVO':
+                    results['toggle_test'] = True
+                    print("✅ María's lavadero now ACTIVE for testing variety")
+                    print(f"   Vence: {toggle_data.get('vence', 'N/A')}")
+                else:
+                    print(f"⚠️  Unexpected new state: {estado_nuevo}")
+            else:
+                print("❌ Toggle failed")
+        
+        # Step 7: Final verification - count total admins
+        print("\n7️⃣ Final verification: Total admin count...")
+        if success_list and isinstance(admins_data, list):
+            total_admins = len(admins_data)
+            print(f"✅ Total admins now: {total_admins}")
+            print("   Expected: Carlos (existing) + María + Juan = 3 admins minimum")
+            
+            # Show admin summary
+            print("\n📋 Admin Summary:")
+            admin_emails = []
+            for admin in admins_data:
+                email = admin.get('email')
+                lavadero_name = admin.get('lavadero', {}).get('nombre', 'Sin lavadero')
+                estado = admin.get('lavadero', {}).get('estado_operativo', 'N/A')
+                admin_emails.append(email)
+                print(f"   • {email} - {lavadero_name} ({estado})")
+            
+            # Verify we have the expected admins
+            expected_emails = ['carlos@lavaderosur.com', 'maria@lavaderocentro.com', 'juan@lavaderonorte.com']
+            all_expected_found = all(email in admin_emails for email in expected_emails)
+            
+            if all_expected_found:
+                print("✅ All expected admins found: Carlos + María + Juan")
+            else:
+                missing = [email for email in expected_emails if email not in admin_emails]
+                print(f"⚠️  Missing expected admins: {missing}")
+        
+        return results
+
 def main():
     print("🚀 Starting Authentication API Tests")
     print("=" * 50)
