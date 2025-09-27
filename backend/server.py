@@ -587,24 +587,68 @@ async def get_current_user_info(request: Request):
 @api_router.get("/dashboard/stats")
 async def get_dashboard_stats(request: Request):
     current_user = await get_current_user(request)
-    if current_user.rol == UserRole.ADMIN:
-        # Admin sees all stats
-        total_users = await db.users.count_documents({})
-        total_employees = await db.users.count_documents({"rol": UserRole.EMPLEADO})
+    
+    if current_user.rol == UserRole.SUPER_ADMIN:
+        # Super Admin: estadísticas globales
+        total_lavaderos = await db.lavaderos.count_documents({})
+        lavaderos_activos = await db.lavaderos.count_documents({"estado_operativo": EstadoAdmin.ACTIVO})
+        lavaderos_pendientes = await db.lavaderos.count_documents({"estado_operativo": EstadoAdmin.PENDIENTE_APROBACION})
+        comprobantes_pendientes = await db.comprobantes_pago_mensualidad.count_documents({"estado": EstadoPago.PENDIENTE})
         
-        return DashboardStats(
-            total_users=total_users,
-            total_employees=total_employees,
-            active_projects=15,  # Simulated data
-            pending_tasks=42     # Simulated data
-        )
-    else:
-        # Employee sees limited stats
-        return UserStats(
-            my_tasks=8,
-            completed_tasks=12,
-            pending_tasks=5
-        )
+        return {
+            "total_lavaderos": total_lavaderos,
+            "lavaderos_activos": lavaderos_activos,
+            "lavaderos_pendientes": lavaderos_pendientes,
+            "comprobantes_pendientes": comprobantes_pendientes
+        }
+    
+    elif current_user.rol == UserRole.ADMIN:
+        # Admin: estadísticas de su lavadero
+        lavadero_doc = await db.lavaderos.find_one({"admin_id": current_user.id})
+        if not lavadero_doc:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Lavadero no encontrado"
+            )
+        
+        lavadero = Lavadero(**lavadero_doc)
+        
+        # Contar turnos
+        total_turnos = await db.turnos.count_documents({"lavadero_id": lavadero.id})
+        turnos_confirmados = await db.turnos.count_documents({"lavadero_id": lavadero.id, "estado": EstadoTurno.CONFIRMADO})
+        turnos_pendientes = await db.turnos.count_documents({"lavadero_id": lavadero.id, "estado": EstadoTurno.RESERVADO})
+        comprobantes_pendientes = await db.comprobantes_pago.count_documents({
+            "turno_id": {"$in": [turno["id"] async for turno in db.turnos.find({"lavadero_id": lavadero.id})]},
+            "estado": EstadoPago.PENDIENTE
+        })
+        
+        # Días restantes de suscripción
+        dias_restantes = 0
+        if lavadero.fecha_vencimiento:
+            diff = lavadero.fecha_vencimiento - datetime.now(timezone.utc)
+            dias_restantes = max(0, diff.days)
+        
+        return {
+            "lavadero_nombre": lavadero.nombre,
+            "estado_operativo": lavadero.estado_operativo,
+            "dias_restantes": dias_restantes,
+            "total_turnos": total_turnos,
+            "turnos_confirmados": turnos_confirmados,
+            "turnos_pendientes": turnos_pendientes,
+            "comprobantes_pendientes": comprobantes_pendientes
+        }
+    
+    else:  # CLIENTE
+        # Cliente: estadísticas de sus turnos
+        mis_turnos = await db.turnos.count_documents({"cliente_id": current_user.id})
+        turnos_confirmados = await db.turnos.count_documents({"cliente_id": current_user.id, "estado": EstadoTurno.CONFIRMADO})
+        turnos_pendientes = await db.turnos.count_documents({"cliente_id": current_user.id, "estado": EstadoTurno.RESERVADO})
+        
+        return {
+            "mis_turnos": mis_turnos,
+            "confirmados": turnos_confirmados,
+            "pendientes": turnos_pendientes
+        }
 
 # User Management (Admin only)
 @api_router.get("/admin/users", response_model=List[UserResponse])
