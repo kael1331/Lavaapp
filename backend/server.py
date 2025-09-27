@@ -1618,7 +1618,15 @@ async def get_dias_no_laborales(request: Request):
     dias_cursor = db.dias_no_laborales.find({"lavadero_id": lavadero_doc["id"]})
     dias = await dias_cursor.to_list(1000)
     
-    return dias
+    # Convert MongoDB documents to proper format (remove _id field)
+    result = []
+    for dia in dias:
+        dia_dict = dict(dia)
+        if '_id' in dia_dict:
+            del dia_dict['_id']  # Remove MongoDB ObjectId
+        result.append(dia_dict)
+    
+    return result
 
 # Agregar día no laboral (Admin)
 @api_router.post("/admin/dias-no-laborales")
