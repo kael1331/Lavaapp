@@ -649,6 +649,102 @@ def main():
     else:
         print("❌ Super Admin login failed - cannot test Super Admin endpoints")
     
+    # Test 11: NEW CONFIGURATION ENDPOINTS TESTS
+    print("\n📋 NEW CONFIGURATION ENDPOINTS TESTS")
+    print("🎯 Testing new laundry configuration endpoints as requested...")
+    
+    # Step 1: Login as regular admin (carlos@lavaderosur.com)
+    print("\n1️⃣ Login as regular admin (carlos@lavaderosur.com)...")
+    carlos_success, carlos_token, carlos_user = tester.test_admin_login_carlos()
+    
+    if carlos_success and carlos_token:
+        print(f"✅ Carlos login successful - Role: {carlos_user.get('rol')}")
+        
+        # Verify it's ADMIN role, not SUPER_ADMIN
+        if carlos_user.get('rol') == 'ADMIN':
+            print("✅ Confirmed: Carlos has ADMIN role (not SUPER_ADMIN)")
+            
+            # Step 2: Test basic configuration endpoints
+            print("\n2️⃣ Testing basic configuration endpoints...")
+            
+            # GET configuracion (should create default if not exists)
+            print("\n   Testing GET /admin/configuracion...")
+            config_get_success, config_data = tester.test_get_configuracion_lavadero(carlos_token)
+            
+            if config_get_success:
+                print("✅ GET configuración successful - default config created if needed")
+                
+                # PUT configuracion with test values
+                print("\n   Testing PUT /admin/configuracion...")
+                config_put_success, _ = tester.test_update_configuracion_lavadero(carlos_token)
+                
+                if config_put_success:
+                    print("✅ PUT configuración successful - test values applied")
+                else:
+                    print("❌ PUT configuración failed")
+            else:
+                print("❌ GET configuración failed")
+            
+            # Step 3: Test días no laborales endpoints
+            print("\n3️⃣ Testing días no laborales endpoints...")
+            
+            # GET días no laborales (should return empty list initially)
+            print("\n   Testing GET /admin/dias-no-laborales...")
+            dias_get_success, dias_data = tester.test_get_dias_no_laborales(carlos_token)
+            
+            if dias_get_success:
+                print(f"✅ GET días no laborales successful - found {len(dias_data) if isinstance(dias_data, list) else 0} days")
+                
+                # POST add día no laboral for tomorrow
+                print("\n   Testing POST /admin/dias-no-laborales...")
+                dia_add_success, dia_add_data = tester.test_add_dia_no_laboral(carlos_token)
+                
+                if dia_add_success:
+                    print("✅ POST día no laboral successful - tomorrow added")
+                    
+                    # GET días no laborales again to verify it was added
+                    print("\n   Verifying día was added...")
+                    dias_verify_success, dias_verify_data = tester.test_get_dias_no_laborales(carlos_token)
+                    
+                    if dias_verify_success and isinstance(dias_verify_data, list):
+                        print(f"✅ Verification successful - now have {len(dias_verify_data)} días no laborales")
+                        
+                        # DELETE the día we just added
+                        if len(dias_verify_data) > 0 and 'id' in dias_verify_data[-1]:
+                            dia_id_to_delete = dias_verify_data[-1]['id']
+                            print(f"\n   Testing DELETE /admin/dias-no-laborales/{dia_id_to_delete}...")
+                            dia_delete_success, _ = tester.test_delete_dia_no_laboral(carlos_token, dia_id_to_delete)
+                            
+                            if dia_delete_success:
+                                print("✅ DELETE día no laboral successful")
+                            else:
+                                print("❌ DELETE día no laboral failed")
+                        else:
+                            print("⚠️  No día ID found to delete")
+                    else:
+                        print("❌ Verification failed - could not get días no laborales")
+                else:
+                    print("❌ POST día no laboral failed")
+            else:
+                print("❌ GET días no laborales failed")
+            
+        else:
+            print(f"❌ ERROR: Carlos has role {carlos_user.get('rol')} instead of ADMIN")
+    else:
+        print("❌ Carlos login failed - cannot test configuration endpoints")
+    
+    # Step 4: Test that Super Admin CANNOT access /admin/ endpoints
+    if super_admin_success and super_admin_token:
+        print("\n4️⃣ Testing Super Admin CANNOT access /admin/ endpoints...")
+        super_admin_blocked_success = tester.test_super_admin_cannot_access_admin_endpoints(super_admin_token)
+        
+        if super_admin_blocked_success:
+            print("✅ Super Admin correctly blocked from /admin/ endpoints")
+        else:
+            print("❌ Super Admin access control failed")
+    else:
+        print("⚠️  Cannot test Super Admin blocking - Super Admin login failed")
+    
     # Print final results
     print("\n" + "=" * 50)
     print(f"📊 FINAL RESULTS")
