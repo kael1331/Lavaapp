@@ -1741,7 +1741,8 @@ const SubirComprobante = () => {
   const [pagoPendiente, setPagoPendiente] = useState(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const [imagenUrl, setImagenUrl] = useState('');
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -1761,19 +1762,60 @@ const SubirComprobante = () => {
     }
   };
 
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validar tipo de archivo
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+      if (!allowedTypes.includes(file.type)) {
+        setError('Solo se permiten archivos de imagen (JPEG, PNG, GIF, WEBP)');
+        return;
+      }
+
+      // Validar tamaño (máximo 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setError('El archivo no puede ser mayor a 5MB');
+        return;
+      }
+
+      setSelectedFile(file);
+      setError('');
+
+      // Crear preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setPreviewUrl(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSubirComprobante = async (e) => {
     e.preventDefault();
+    if (!selectedFile) {
+      setError('Por favor selecciona un archivo');
+      return;
+    }
+
     setUploading(true);
     setError('');
     setSuccess('');
 
     try {
-      const response = await axios.post(`${API}/comprobante-mensualidad`, {
-        imagen_url: imagenUrl
+      const formData = new FormData();
+      formData.append('imagen', selectedFile);
+
+      const response = await axios.post(`${API}/comprobante-mensualidad`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
       });
       
       setSuccess(response.data.message);
-      setImagenUrl('');
+      setSelectedFile(null);
+      setPreviewUrl('');
+      // Reset file input
+      document.getElementById('file-input').value = '';
       await fetchPagoPendiente(); // Refrescar datos
     } catch (error) {
       setError(error.response?.data?.detail || 'Error al subir comprobante');
@@ -1802,52 +1844,48 @@ const SubirComprobante = () => {
   }
 
   return (
-    <div className="p-8">
+    <div className="p-8 max-w-2xl mx-auto">
       <h1 className="text-3xl font-bold text-gray-900 mb-8">Subir Comprobante de Pago</h1>
-
-      {/* Información del Pago */}
-      <div className="bg-blue-50 p-6 rounded-lg mb-6">
-        <h2 className="text-xl font-semibold text-blue-800 mb-4">Información de Pago Pendiente</h2>
-        <div className="space-y-2">
-          <p><strong>Monto:</strong> ${pagoPendiente.monto}</p>
-          <p><strong>Período:</strong> {pagoPendiente.mes_año}</p>
-          <p><strong>Fecha límite:</strong> {new Date(pagoPendiente.fecha_vencimiento).toLocaleDateString()}</p>
+      
+      {/* Información del pago pendiente */}
+      <div className="bg-blue-50 border border-blue-200 p-6 rounded-lg mb-8">
+        <h2 className="text-xl font-semibold text-blue-800 mb-4">Información del Pago</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+          <div>
+            <span className="font-medium text-blue-700">Monto a pagar:</span>
+            <span className="ml-2 text-blue-900 font-bold">${pagoPendiente.monto}</span>
+          </div>
+          <div>
+            <span className="font-medium text-blue-700">Mes/Año:</span>
+            <span className="ml-2 text-blue-900">{pagoPendiente.mes_año}</span>
+          </div>
+        </div>
+        <div className="mt-4 p-3 bg-blue-100 rounded">
+          <p className="text-sm text-blue-800">
+            <strong>Instrucciones:</strong> Realiza la transferencia por el monto exacto al alias bancario del Super Admin 
+            y luego sube el comprobante de la transferencia aquí.
+          </p>
         </div>
       </div>
 
       {pagoPendiente.tiene_comprobante ? (
         // Ya tiene comprobante subido
-        <div className="bg-yellow-50 p-6 rounded-lg">
-          <h3 className="text-lg font-semibold text-yellow-800 mb-2">Estado del Comprobante</h3>
-          <div className="flex items-center space-x-2">
-            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-              pagoPendiente.estado_comprobante === 'PENDIENTE' 
-                ? 'bg-yellow-100 text-yellow-800'
-                : pagoPendiente.estado_comprobante === 'CONFIRMADO'
-                ? 'bg-green-100 text-green-800' 
-                : 'bg-red-100 text-red-800'
-            }`}>
-              {pagoPendiente.estado_comprobante}
-            </span>
+        <div className="bg-yellow-50 border border-yellow-200 p-6 rounded-lg">
+          <h3 className="text-lg font-semibold text-yellow-800 mb-2">Comprobante en Revisión</h3>
+          <p className="text-yellow-700 mb-4">
+            Ya has subido un comprobante para este pago. Estado: <strong>{pagoPendiente.estado_comprobante}</strong>
+          </p>
+          <div className="text-sm text-yellow-600">
+            {pagoPendiente.estado_comprobante === 'PENDIENTE' && (
+              <p>⏳ Tu comprobante está siendo revisado por el Super Admin.</p>
+            )}
+            {pagoPendiente.estado_comprobante === 'CONFIRMADO' && (
+              <p>✅ Tu comprobante ha sido aprobado. El lavadero será activado pronto.</p>
+            )}
+            {pagoPendiente.estado_comprobante === 'RECHAZADO' && (
+              <p>❌ Tu comprobante fue rechazado. Contáctate con el Super Admin para más información.</p>
+            )}
           </div>
-          
-          {pagoPendiente.estado_comprobante === 'PENDIENTE' && (
-            <p className="mt-2 text-sm text-yellow-700">
-              Tu comprobante está siendo revisado por el Super Admin. Te notificaremos cuando sea aprobado.
-            </p>
-          )}
-          
-          {pagoPendiente.estado_comprobante === 'CONFIRMADO' && (
-            <p className="mt-2 text-sm text-green-700">
-              ✅ Tu pago ha sido confirmado. Tu lavadero está activo.
-            </p>
-          )}
-          
-          {pagoPendiente.estado_comprobante === 'RECHAZADO' && (
-            <p className="mt-2 text-sm text-red-700">
-              ❌ Tu comprobante fue rechazado. Por favor sube un nuevo comprobante válido.
-            </p>
-          )}
         </div>
       ) : (
         // Formulario para subir comprobante
@@ -1869,51 +1907,55 @@ const SubirComprobante = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                URL de la Imagen del Comprobante *
+                Seleccionar Archivo de Imagen *
               </label>
               <input
-                type="url"
-                required
-                value={imagenUrl}
-                onChange={(e) => setImagenUrl(e.target.value)}
-                placeholder="https://ejemplo.com/mi-comprobante.jpg"
+                id="file-input"
+                type="file"
+                accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                onChange={handleFileChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               />
               <p className="mt-1 text-sm text-gray-500">
-                Sube tu imagen a un servicio como Imgur, Google Drive (enlace público) o similar, y pega aquí el enlace.
+                Formatos soportados: JPEG, PNG, GIF, WEBP. Tamaño máximo: 5MB
               </p>
             </div>
 
-            {imagenUrl && (
+            {previewUrl && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Vista Previa:</label>
-                <img 
-                  src={imagenUrl} 
-                  alt="Vista previa del comprobante" 
-                  className="max-w-sm max-h-64 object-contain border border-gray-300 rounded"
-                  onError={(e) => {
-                    e.target.style.display = 'none';
-                  }}
-                />
+                <div className="border border-gray-300 rounded-lg p-2 bg-gray-50">
+                  <img 
+                    src={previewUrl} 
+                    alt="Vista previa del comprobante" 
+                    className="max-w-full max-h-64 object-contain mx-auto rounded"
+                  />
+                  {selectedFile && (
+                    <div className="mt-2 text-sm text-gray-600 text-center">
+                      <p>Archivo: {selectedFile.name}</p>
+                      <p>Tamaño: {(selectedFile.size / 1024).toFixed(1)} KB</p>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
             <div className="bg-gray-50 p-4 rounded-md">
-              <h4 className="font-semibold text-gray-800 mb-2">Instrucciones:</h4>
+              <h4 className="font-semibold text-gray-800 mb-2">Requisitos del Comprobante:</h4>
               <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
                 <li>El comprobante debe mostrar claramente el monto transferido</li>
                 <li>Debe incluir el alias bancario del destinatario</li>
                 <li>La imagen debe ser legible y de buena calidad</li>
-                <li>Formatos aceptados: JPG, PNG, PDF</li>
+                <li>Captura de pantalla del comprobante bancario o transferencia</li>
               </ul>
             </div>
 
             <button
               type="submit"
-              disabled={uploading || !imagenUrl}
+              disabled={uploading || !selectedFile}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors disabled:opacity-50"
             >
-              {uploading ? 'Subiendo...' : 'Subir Comprobante'}
+              {uploading ? 'Subiendo Archivo...' : 'Subir Comprobante'}
             </button>
           </form>
         </div>
