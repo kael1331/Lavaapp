@@ -457,6 +457,84 @@ def main():
     # Test logout endpoint
     tester.test_logout()
     
+    # Test 10: Super Admin Specific Tests (New Requirements)
+    print("\n📋 SUPER ADMIN SPECIFIC TESTS")
+    
+    # Login as Super Admin
+    super_admin_success, super_admin_token, super_admin_user = tester.test_super_admin_login()
+    
+    if super_admin_success and super_admin_token:
+        print("\n🔧 Testing Super Admin Endpoints...")
+        
+        # Test 1: Get all admins
+        success, admins_data = tester.test_get_all_admins(super_admin_token)
+        
+        # Test 2: Credenciales testing endpoint
+        print("\n🔑 Testing Credenciales Testing Endpoint...")
+        cred_success, cred_data = tester.test_credenciales_testing(super_admin_token)
+        
+        if cred_success and isinstance(cred_data, list):
+            print(f"   Found {len(cred_data)} admin credentials")
+            # Check if we have real passwords (not "contraseña_no_encontrada")
+            real_passwords = [cred for cred in cred_data if cred.get('password') != 'contraseña_no_encontrada']
+            print(f"   Real passwords found: {len(real_passwords)}")
+            
+            if len(real_passwords) > 0:
+                print("✅ Credenciales system is working - showing real passwords")
+                for cred in real_passwords[:3]:  # Show first 3 as example
+                    print(f"      Example: {cred.get('email')} -> {cred.get('password')}")
+            else:
+                print("❌ Credenciales system issue - only showing 'contraseña_no_encontrada'")
+        
+        # Test 3: Toggle lavadero functionality
+        print("\n🔄 Testing Toggle Lavadero Endpoint...")
+        
+        # First, create a test admin if we don't have any
+        test_admin_id = None
+        if success and isinstance(admins_data, list) and len(admins_data) > 0:
+            # Use existing admin
+            test_admin_id = admins_data[0].get('admin_id')
+            print(f"   Using existing admin ID: {test_admin_id}")
+        else:
+            # Create a new admin for testing
+            create_success, create_data = tester.test_create_admin_for_testing(super_admin_token)
+            if create_success and 'admin_id' in create_data:
+                test_admin_id = create_data['admin_id']
+                print(f"   Created new admin ID: {test_admin_id}")
+        
+        if test_admin_id:
+            # Test toggle functionality - first toggle
+            print(f"\n   Testing first toggle (should change state)...")
+            toggle1_success, toggle1_data = tester.test_toggle_lavadero(super_admin_token, test_admin_id)
+            
+            if toggle1_success and isinstance(toggle1_data, dict):
+                estado_anterior_1 = toggle1_data.get('estado_anterior')
+                estado_nuevo_1 = toggle1_data.get('estado_nuevo')
+                print(f"   First toggle: {estado_anterior_1} -> {estado_nuevo_1}")
+                
+                # Test toggle functionality - second toggle (should revert)
+                print(f"\n   Testing second toggle (should revert state)...")
+                toggle2_success, toggle2_data = tester.test_toggle_lavadero(super_admin_token, test_admin_id)
+                
+                if toggle2_success and isinstance(toggle2_data, dict):
+                    estado_anterior_2 = toggle2_data.get('estado_anterior')
+                    estado_nuevo_2 = toggle2_data.get('estado_nuevo')
+                    print(f"   Second toggle: {estado_anterior_2} -> {estado_nuevo_2}")
+                    
+                    # Verify toggle works both ways
+                    if estado_anterior_1 == estado_nuevo_2 and estado_nuevo_1 == estado_anterior_2:
+                        print("✅ Toggle functionality working correctly - states toggle both ways")
+                    else:
+                        print("❌ Toggle functionality issue - states not toggling properly")
+                else:
+                    print("❌ Second toggle failed")
+            else:
+                print("❌ First toggle failed")
+        else:
+            print("❌ No admin available for toggle testing")
+    else:
+        print("❌ Super Admin login failed - cannot test Super Admin endpoints")
+    
     # Print final results
     print("\n" + "=" * 50)
     print(f"📊 FINAL RESULTS")
