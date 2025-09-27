@@ -221,13 +221,17 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
 const Navigation = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = window.location;
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate('/');
   };
 
-  if (!user) return null;
+  // No mostrar navegación en página principal, login de lavaderos, o login de admins
+  if (!user || location.pathname === '/' || location.pathname.includes('/lavadero/') || location.pathname === '/admin-login') {
+    return null;
+  }
 
   return (
     <nav className="bg-gray-800 text-white p-4">
