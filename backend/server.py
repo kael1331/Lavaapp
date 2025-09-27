@@ -402,12 +402,36 @@ async def get_current_user_optional(request: Request):
 
 async def get_admin_user(request: Request):
     current_user = await get_current_user(request)
-    if current_user.rol != UserRole.ADMIN:
+    if current_user.rol not in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="No tienes permisos de administrador"
         )
     return current_user
+
+async def get_super_admin_user(request: Request):
+    current_user = await get_current_user(request)
+    if current_user.rol != UserRole.SUPER_ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tienes permisos de super administrador"
+        )
+    return current_user
+
+async def get_lavadero_by_id(lavadero_id: str):
+    lavadero_doc = await db.lavaderos.find_one({"id": lavadero_id})
+    if lavadero_doc:
+        return Lavadero(**lavadero_doc)
+    return None
+
+async def verify_admin_owns_lavadero(admin_id: str, lavadero_id: str):
+    lavadero = await get_lavadero_by_id(lavadero_id)
+    if not lavadero or lavadero.admin_id != admin_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tienes permisos para acceder a este lavadero"
+        )
+    return lavadero
 
 # API Routes
 @api_router.post("/register", response_model=UserResponse)
