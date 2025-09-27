@@ -304,11 +304,15 @@ const Login = () => {
     setLoading(true);
     setError('');
 
+    console.log('Intentando login con:', formData.email);
     const result = await login(formData.email, formData.password);
+    console.log('Resultado del login:', result);
     
     if (result.success) {
+      console.log('Login exitoso, navegando al dashboard...');
       navigate('/dashboard');
     } else {
+      console.error('Error en login:', result.error);
       setError(result.error);
     }
     
