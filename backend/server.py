@@ -41,6 +41,14 @@ security = HTTPBearer()
 app = FastAPI(title="Demo Authentication API")
 api_router = APIRouter(prefix="/api")
 
+# Create uploads directory
+UPLOAD_DIR = Path("/app/uploads")
+COMPROBANTES_DIR = UPLOAD_DIR / "comprobantes"
+COMPROBANTES_DIR.mkdir(parents=True, exist_ok=True)
+
+# Mount static files
+app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
+
 # User Models
 class UserRole(str):
     SUPER_ADMIN = "SUPER_ADMIN"
