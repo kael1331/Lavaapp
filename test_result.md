@@ -156,8 +156,6 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Crear endpoint toggle para activar/desactivar lavadero"
-    - "Mejorar sistema de credenciales para mostrar contraseñas reales"
     - "Modificar botón toggle para activar/desactivar lavaderos"
   stuck_tasks:
     - "Problema de routing en frontend - /superadmin/admins no muestra la página correcta"
