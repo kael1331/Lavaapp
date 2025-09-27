@@ -1404,11 +1404,38 @@ async def crear_admin_superadmin(admin_data: AdminLavaderoRegister, request: Req
     lavadero_dict = new_lavadero.dict()
     await db.lavaderos.insert_one(lavadero_dict)
     
+    # Crear pago mensualidad pendiente (igual que en registro normal)
+    # Obtener configuración super admin
+    config_super = await db.configuracion_superadmin.find_one({})
+    if not config_super:
+        # Crear configuración por defecto si no existe
+        default_config = ConfiguracionSuperAdmin(
+            alias_bancario="superadmin.alias.mp",
+            precio_mensualidad=10000.0
+        )
+        await db.configuracion_superadmin.insert_one(default_config.dict())
+        config_super = default_config.dict()
+    
+    # Crear pago mensualidad
+    from datetime import timedelta
+    fecha_vencimiento = datetime.now(timezone.utc) + timedelta(days=30)
+    
+    pago_mensualidad = PagoMensualidad(
+        admin_id=new_admin.id,
+        lavadero_id=new_lavadero.id,
+        monto=config_super.get("precio_mensualidad", 10000.0),
+        mes_año=datetime.now().strftime("%Y-%m"),
+        fecha_vencimiento=fecha_vencimiento
+    )
+    
+    await db.pagos_mensualidad.insert_one(pago_mensualidad.dict())
+    
     return {
         "message": "Admin y lavadero creados exitosamente por Super Admin",
         "admin_id": new_admin.id,
         "lavadero_id": new_lavadero.id,
-        "estado": "PENDIENTE_APROBACION - Usar 'Activar Lavadero' para activar sin pago"
+        "pago_id": pago_mensualidad.id,
+        "estado": "PENDIENTE_APROBACION - Admin puede subir comprobante de pago o usar 'Activar Lavadero' para activar sin pago"
     }
 
 # Toggle estado de lavadero (Activar/Desactivar) - Super Admin para testing
