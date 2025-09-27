@@ -1105,8 +1105,16 @@ const LavaderoLogin = () => {
   const { lavaderoId } = useParams();
   const [lavadero, setLavadero] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
+    // Si ya está logueado, redirigir al dashboard
+    if (user) {
+      navigate('/dashboard');
+      return;
+    }
+
     // Por ahora simulamos obtener datos del lavadero
     // En el futuro implementaremos el endpoint específico
     setLavadero({
@@ -1115,7 +1123,7 @@ const LavaderoLogin = () => {
       direccion: "Dirección Demo"
     });
     setLoading(false);
-  }, [lavaderoId]);
+  }, [lavaderoId, user, navigate]);
 
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">Cargando...</div>;
