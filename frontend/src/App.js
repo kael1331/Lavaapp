@@ -2336,13 +2336,23 @@ const GestionAdmins = () => {
                           </div>
                         </div>
                         
-                        <div className="flex space-x-2">
+                        <div className="flex flex-wrap gap-2">
                           <button
                             onClick={() => handleEdit(admin)}
                             className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm"
                           >
                             Editar
                           </button>
+                          
+                          {admin.lavadero.estado_operativo !== 'ACTIVO' && (
+                            <button
+                              onClick={() => handleActivarLavadero(admin.admin_id)}
+                              className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm"
+                            >
+                              Activar Lavadero
+                            </button>
+                          )}
+                          
                           <button
                             onClick={() => handleDelete(admin.admin_id)}
                             className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm"
