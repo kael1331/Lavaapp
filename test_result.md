@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "TAREA ESPECÍFICA: Crear 2 nuevos administradores de lavaderos para testing usando el endpoint de Super Admin. Crear Admin 1: maría@lavaderocentro.com con Lavadero Centro, y Admin 2: juan@lavaderonorte.com con Lavadero Norte. Verificar que ambos se crean correctamente, están en estado PENDIENTE_APROBACION, las contraseñas aparecen en credenciales-testing, y ambos pueden hacer login correctamente."
+user_problem_statement: "Verificar y corregir el problema de comprobantes de pago para admins con lavaderos PENDIENTE_APROBACION. Los admins creados por Super Admin usando /superadmin/crear-admin no tenían pago mensualidad creado, por lo que no podían subir comprobantes. Verificar estado actual de pagos mensualidad, crear pagos faltantes si es necesario, y probar subida de comprobantes para admin con estado PENDIENTE (Juan: juan@lavaderonorte.com)."
 
 backend:
   - task: "Crear endpoint toggle para activar/desactivar lavadero"
