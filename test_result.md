@@ -111,11 +111,14 @@ backend:
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Creado nuevo endpoint /superadmin/toggle-lavadero/{admin_id} que permite cambiar entre ACTIVO y PENDIENTE_APROBACION"
+      - working: true
+        agent: "testing"
+        comment: "✅ ENDPOINT FUNCIONANDO CORRECTAMENTE - Probado endpoint /superadmin/toggle-lavadero/{admin_id} con autenticación Super Admin (kearcangel@gmail.com). Toggle funciona en ambas direcciones: PENDIENTE_APROBACION -> ACTIVO -> PENDIENTE_APROBACION. Respuesta incluye estado_anterior y estado_nuevo como requerido. Al activar establece fecha_vencimiento, al desactivar la remueve."
 
   - task: "Mejorar sistema de credenciales para mostrar contraseñas reales"
     implemented: true
@@ -123,11 +126,14 @@ backend:
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Ampliada lista de contraseñas comunes de 4 a 25 elementos, agregada tabla temporal temp_credentials para guardar contraseñas plaintext durante testing"
+      - working: true
+        agent: "testing"
+        comment: "✅ SISTEMA DE CREDENCIALES MEJORADO - Probado endpoint /superadmin/credenciales-testing con autenticación Super Admin. De 3 admins encontrados, 2 muestran contraseñas reales (admin123, carlos123) y solo 1 muestra 'contraseña_no_encontrada'. Sistema funciona correctamente mostrando más contraseñas que antes. Tabla temp_credentials operativa."
 
 frontend:
   - task: "Modificar botón toggle para activar/desactivar lavaderos"
