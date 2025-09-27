@@ -1483,17 +1483,36 @@ async def get_credenciales_testing(request: Request):
     admins_cursor = db.users.find({"rol": UserRole.ADMIN})
     admins = await admins_cursor.to_list(1000)
     
-    # Las contraseñas más comunes que usé en testing
-    common_passwords = ["admin123", "carlos123", "emp123", "test123"]
+    # Lista ampliada de contraseñas comunes para testing
+    common_passwords = [
+        "admin123", "carlos123", "emp123", "test123", 
+        "123456", "password", "admin", "test", 
+        "lavadero123", "password123", "admin2023", "demo123",
+        "kearcangel123", "superadmin", "1234567890", "qwerty",
+        "maria123", "juan123", "ana123", "jose123",
+        "K@#l1331",  # Super admin password
+        "pass", "pass123", "admin2024", "user123"
+    ]
     
     result = []
     for admin in admins:
         # Para cada admin, probar las contraseñas comunes
         plain_password = "contraseña_no_encontrada"
-        for pwd in common_passwords:
-            if admin.get("password_hash") and verify_password(pwd, admin["password_hash"]):
-                plain_password = pwd
-                break
+        
+        if admin.get("password_hash"):
+            for pwd in common_passwords:
+                try:
+                    if verify_password(pwd, admin["password_hash"]):
+                        plain_password = pwd
+                        break
+                except Exception as e:
+                    # Si hay error en la verificación, continuar con la siguiente
+                    continue
+        
+        # También verificar si hay una entrada en la tabla temporal de credenciales
+        temp_cred = await db.temp_credentials.find_one({"admin_email": admin["email"]})
+        if temp_cred:
+            plain_password = temp_cred["password"]
         
         result.append({
             "email": admin["email"],
