@@ -1853,6 +1853,266 @@ const RevisarComprobantes = () => {
   );
 };
 
+// Componente de Gestión de Admins (Super Admin)
+const GestionAdmins = () => {
+  const [admins, setAdmins] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [editingAdmin, setEditingAdmin] = useState(null);
+  const [editForm, setEditForm] = useState({});
+  const [showPassword, setShowPassword] = useState({});
+
+  useEffect(() => {
+    fetchAdmins();
+  }, []);
+
+  const fetchAdmins = async () => {
+    try {
+      const response = await axios.get(`${API}/superadmin/admins`);
+      setAdmins(response.data);
+    } catch (error) {
+      console.error('Error fetching admins:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEdit = (admin) => {
+    setEditingAdmin(admin.admin_id);
+    setEditForm({
+      nombre: admin.nombre,
+      email: admin.email,
+      password: '',
+      is_active: admin.is_active
+    });
+  };
+
+  const handleSaveEdit = async (adminId) => {
+    try {
+      const updateData = {};
+      if (editForm.nombre) updateData.nombre = editForm.nombre;
+      if (editForm.email) updateData.email = editForm.email;
+      if (editForm.password) updateData.password = editForm.password;
+      if (editForm.is_active !== undefined) updateData.is_active = editForm.is_active;
+
+      await axios.put(`${API}/superadmin/admins/${adminId}`, updateData);
+      
+      setEditingAdmin(null);
+      setEditForm({});
+      await fetchAdmins();
+      alert('Admin actualizado correctamente');
+    } catch (error) {
+      alert(error.response?.data?.detail || 'Error al actualizar admin');
+    }
+  };
+
+  const handleDelete = async (adminId) => {
+    if (window.confirm('¿Estás seguro de que quieres eliminar este admin? Se eliminarán todos sus datos asociados.')) {
+      try {
+        await axios.delete(`${API}/superadmin/admins/${adminId}`);
+        await fetchAdmins();
+        alert('Admin eliminado correctamente');
+      } catch (error) {
+        alert(error.response?.data?.detail || 'Error al eliminar admin');
+      }
+    }
+  };
+
+  const toggleShowPassword = (adminId) => {
+    setShowPassword(prev => ({
+      ...prev,
+      [adminId]: !prev[adminId]
+    }));
+  };
+
+  if (loading) {
+    return (
+      <div className="p-8">
+        <div className="text-center">Cargando administradores...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-8">
+      <h1 className="text-3xl font-bold text-gray-900 mb-8">Gestión de Administradores</h1>
+
+      <div className="bg-white shadow overflow-hidden sm:rounded-md">
+        <div className="px-4 py-5 sm:px-6">
+          <h3 className="text-lg leading-6 font-medium text-gray-900">
+            Administradores Registrados ({admins.length})
+          </h3>
+          <p className="mt-1 max-w-2xl text-sm text-gray-500">
+            Gestiona todos los administradores de lavaderos del sistema
+          </p>
+        </div>
+
+        <div className="border-t border-gray-200">
+          {admins.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              No hay administradores registrados
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-200">
+              {admins.map((admin) => (
+                <div key={admin.admin_id} className="px-4 py-6">
+                  {editingAdmin === admin.admin_id ? (
+                    // Modo edición
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">Nombre</label>
+                          <input
+                            type="text"
+                            value={editForm.nombre}
+                            onChange={(e) => setEditForm({...editForm, nombre: e.target.value})}
+                            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">Email</label>
+                          <input
+                            type="email"
+                            value={editForm.email}
+                            onChange={(e) => setEditForm({...editForm, email: e.target.value})}
+                            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">Nueva Contraseña (opcional)</label>
+                          <input
+                            type="password"
+                            value={editForm.password}
+                            onChange={(e) => setEditForm({...editForm, password: e.target.value})}
+                            placeholder="Dejar vacío para no cambiar"
+                            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">Estado</label>
+                          <select
+                            value={editForm.is_active}
+                            onChange={(e) => setEditForm({...editForm, is_active: e.target.value === 'true'})}
+                            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                          >
+                            <option value="true">Activo</option>
+                            <option value="false">Inactivo</option>
+                          </select>
+                        </div>
+                      </div>
+                      
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => handleSaveEdit(admin.admin_id)}
+                          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md"
+                        >
+                          Guardar
+                        </button>
+                        <button
+                          onClick={() => setEditingAdmin(null)}
+                          className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    // Modo visualización
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-4">
+                            <div>
+                              <h4 className="text-lg font-medium text-gray-900">{admin.nombre}</h4>
+                              <p className="text-sm text-gray-500">{admin.email}</p>
+                            </div>
+                            <div>
+                              <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                                admin.is_active 
+                                  ? 'bg-green-100 text-green-800' 
+                                  : 'bg-red-100 text-red-800'
+                              }`}>
+                                {admin.is_active ? 'Activo' : 'Inactivo'}
+                              </span>
+                              {admin.google_id && (
+                                <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                                  Google
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
+                            <div>
+                              <strong>Lavadero:</strong> {admin.lavadero.nombre}
+                            </div>
+                            <div>
+                              <strong>Estado Lavadero:</strong> 
+                              <span className={`ml-1 px-2 py-1 text-xs rounded-full ${
+                                admin.lavadero.estado_operativo === 'ACTIVO' 
+                                  ? 'bg-green-100 text-green-800'
+                                  : admin.lavadero.estado_operativo === 'PENDIENTE_APROBACION'
+                                  ? 'bg-yellow-100 text-yellow-800'
+                                  : 'bg-red-100 text-red-800'
+                              }`}>
+                                {admin.lavadero.estado_operativo}
+                              </span>
+                            </div>
+                            <div>
+                              <strong>Registrado:</strong> {new Date(admin.created_at).toLocaleDateString()}
+                            </div>
+                            {admin.lavadero.fecha_vencimiento && (
+                              <div>
+                                <strong>Vence:</strong> {new Date(admin.lavadero.fecha_vencimiento).toLocaleDateString()}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Información de contraseña */}
+                          <div className="mt-2">
+                            <button
+                              onClick={() => toggleShowPassword(admin.admin_id)}
+                              className="text-sm text-blue-600 hover:text-blue-500"
+                            >
+                              {showPassword[admin.admin_id] ? 'Ocultar' : 'Ver'} info de contraseña
+                            </button>
+                            {showPassword[admin.admin_id] && (
+                              <div className="mt-1 text-sm text-gray-600 bg-gray-50 p-2 rounded">
+                                <strong>Hash de contraseña:</strong><br />
+                                <code className="text-xs break-all">
+                                  {admin.password_hash || 'Sin contraseña (usuario de Google)'}
+                                </code>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => handleEdit(admin)}
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm"
+                          >
+                            Editar
+                          </button>
+                          <button
+                            onClick={() => handleDelete(admin.admin_id)}
+                            className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm"
+                          >
+                            Eliminar
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Main App Component
 function App() {
   return (
