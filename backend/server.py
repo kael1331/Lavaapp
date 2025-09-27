@@ -967,6 +967,212 @@ async def get_comprobantes_pendientes(request: Request):
     
     return result
 
+# ========== ENDPOINTS DE COMPROBANTES ==========
+
+# Subir comprobante de pago mensualidad (Admin)
+@api_router.post("/comprobante-mensualidad")
+async def upload_comprobante_mensualidad(request: Request, comprobante_data: ComprobantePagoMensualidadCreate):
+    current_user = await get_current_user(request)
+    
+    if current_user.rol != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Solo los administradores pueden subir comprobantes"
+        )
+    
+    # Buscar pago mensualidad pendiente del admin
+    pago_pendiente = await db.pagos_mensualidad.find_one({
+        "admin_id": current_user.id,
+        "estado": EstadoPago.PENDIENTE
+    })
+    
+    if not pago_pendiente:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No hay pagos pendientes para este administrador"
+        )
+    
+    # Verificar si ya existe un comprobante para este pago
+    existing_comprobante = await db.comprobantes_pago_mensualidad.find_one({
+        "pago_mensualidad_id": pago_pendiente["id"],
+        "estado": {"$in": [EstadoPago.PENDIENTE, EstadoPago.CONFIRMADO]}
+    })
+    
+    if existing_comprobante:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Ya existe un comprobante para este pago"
+        )
+    
+    # Crear comprobante
+    nuevo_comprobante = ComprobantePagoMensualidad(
+        pago_mensualidad_id=pago_pendiente["id"],
+        admin_id=current_user.id,
+        imagen_url=comprobante_data.imagen_url
+    )
+    
+    comprobante_dict = nuevo_comprobante.dict()
+    await db.comprobantes_pago_mensualidad.insert_one(comprobante_dict)
+    
+    return {
+        "message": "Comprobante subido exitosamente",
+        "comprobante_id": nuevo_comprobante.id,
+        "estado": "Pendiente de revisión por Super Admin"
+    }
+
+# Obtener comprobantes del admin (Admin)
+@api_router.get("/admin/mis-comprobantes")
+async def get_mis_comprobantes(request: Request):
+    current_user = await get_current_user(request)
+    
+    if current_user.rol != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Solo los administradores pueden ver sus comprobantes"
+        )
+    
+    # Pipeline para obtener comprobantes con información del pago
+    pipeline = [
+        {"$match": {"admin_id": current_user.id}},
+        {
+            "$lookup": {
+                "from": "pagos_mensualidad",
+                "localField": "pago_mensualidad_id",
+                "foreignField": "id",  
+                "as": "pago"
+            }
+        },
+        {"$unwind": "$pago"},
+        {"$sort": {"created_at": -1}}
+    ]
+    
+    comprobantes = await db.comprobantes_pago_mensualidad.aggregate(pipeline).to_list(100)
+    
+    result = []
+    for comp in comprobantes:
+        result.append({
+            "comprobante_id": comp["id"],
+            "monto": comp["pago"]["monto"],
+            "mes_año": comp["pago"]["mes_año"],
+            "imagen_url": comp["imagen_url"],
+            "estado": comp["estado"],
+            "comentario_superadmin": comp.get("comentario_superadmin"),
+            "fecha_revision": comp.get("fecha_revision"),
+            "created_at": comp["created_at"]
+        })
+    
+    return result
+
+# Obtener pago pendiente del admin (Admin)
+@api_router.get("/admin/pago-pendiente")
+async def get_pago_pendiente(request: Request):
+    current_user = await get_current_user(request)
+    
+    if current_user.rol != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Solo los administradores pueden ver sus pagos"
+        )
+    
+    # Buscar pago pendiente
+    pago_pendiente = await db.pagos_mensualidad.find_one({
+        "admin_id": current_user.id,
+        "estado": EstadoPago.PENDIENTE
+    })
+    
+    if not pago_pendiente:
+        return {"tiene_pago_pendiente": False}
+    
+    # Verificar si ya tiene comprobante
+    comprobante = await db.comprobantes_pago_mensualidad.find_one({
+        "pago_mensualidad_id": pago_pendiente["id"],
+        "estado": {"$in": [EstadoPago.PENDIENTE, EstadoPago.CONFIRMADO]}
+    })
+    
+    return {
+        "tiene_pago_pendiente": True,
+        "pago_id": pago_pendiente["id"],
+        "monto": pago_pendiente["monto"],
+        "mes_año": pago_pendiente["mes_año"],
+        "fecha_vencimiento": pago_pendiente["fecha_vencimiento"],
+        "tiene_comprobante": comprobante is not None,
+        "estado_comprobante": comprobante["estado"] if comprobante else None
+    }
+
+# Aprobar comprobante (Super Admin)
+@api_router.post("/superadmin/aprobar-comprobante/{comprobante_id}")
+async def aprobar_comprobante(comprobante_id: str, request: Request):
+    await get_super_admin_user(request)
+    
+    # Buscar comprobante
+    comprobante_doc = await db.comprobantes_pago_mensualidad.find_one({"id": comprobante_id})
+    if not comprobante_doc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Comprobante no encontrado"
+        )
+    
+    # Actualizar comprobante
+    await db.comprobantes_pago_mensualidad.update_one(
+        {"id": comprobante_id},
+        {
+            "$set": {
+                "estado": EstadoPago.CONFIRMADO,
+                "fecha_revision": datetime.now(timezone.utc),
+                "comentario_superadmin": "Pago confirmado"
+            }
+        }
+    )
+    
+    # Actualizar pago mensualidad
+    await db.pagos_mensualidad.update_one(
+        {"id": comprobante_doc["pago_mensualidad_id"]},
+        {"$set": {"estado": EstadoPago.CONFIRMADO}}
+    )
+    
+    # Buscar y activar lavadero
+    pago_doc = await db.pagos_mensualidad.find_one({"id": comprobante_doc["pago_mensualidad_id"]})
+    if pago_doc:
+        fecha_vencimiento = datetime.now(timezone.utc) + timedelta(days=30)
+        await db.lavaderos.update_one(
+            {"id": pago_doc["lavadero_id"]},
+            {
+                "$set": {
+                    "estado_operativo": EstadoAdmin.ACTIVO,
+                    "fecha_vencimiento": fecha_vencimiento
+                }
+            }
+        )
+    
+    return {"message": "Comprobante aprobado y lavadero activado"}
+
+# Rechazar comprobante (Super Admin)
+@api_router.post("/superadmin/rechazar-comprobante/{comprobante_id}")
+async def rechazar_comprobante(comprobante_id: str, comentario: str, request: Request):
+    await get_super_admin_user(request)
+    
+    # Buscar comprobante
+    comprobante_doc = await db.comprobantes_pago_mensualidad.find_one({"id": comprobante_id})
+    if not comprobante_doc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Comprobante no encontrado"
+        )
+    
+    # Actualizar comprobante
+    await db.comprobantes_pago_mensualidad.update_one(
+        {"id": comprobante_id},
+        {
+            "$set": {
+                "estado": EstadoPago.RECHAZADO,
+                "fecha_revision": datetime.now(timezone.utc),
+                "comentario_superadmin": comentario
+            }
+        }
+    )
+    
+    return {"message": "Comprobante rechazado"}
+
 # Health check
 @api_router.get("/health")
 async def health_check():
