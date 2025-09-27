@@ -489,6 +489,16 @@ async def register_admin_with_lavadero(admin_data: AdminLavaderoRegister):
             detail="El email ya está registrado"
         )
     
+    # Check if lavadero name already exists (case-insensitive)
+    existing_lavadero = await db.lavaderos.find_one({
+        "nombre": {"$regex": f"^{admin_data.lavadero.nombre}$", "$options": "i"}
+    })
+    if existing_lavadero:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Ya existe un lavadero con ese nombre"
+        )
+    
     # Create admin user
     password_hash = get_password_hash(admin_data.password)
     new_admin = User(
