@@ -2052,7 +2052,7 @@ const RevisarComprobantes = () => {
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Comprobante:</label>
                 <img 
-                  src={`${API.replace('/api', '')}${comprobante.imagen_url}`}
+                  src={`${API}${comprobante.imagen_url}`}
                   alt="Comprobante de pago" 
                   className="max-w-md max-h-64 object-contain border border-gray-300 rounded"
                   onError={(e) => {
@@ -2062,7 +2062,7 @@ const RevisarComprobantes = () => {
                   }}
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  URL: {`${API.replace('/api', '')}${comprobante.imagen_url}`}
+                  URL: {`${API}${comprobante.imagen_url}`}
                 </p>
               </div>
 
