@@ -2434,6 +2434,12 @@ function App() {
               </ProtectedRoute>
             } />
             
+            <Route path="/superadmin-dashboard" element={
+              <ProtectedRoute requiredRole="SUPER_ADMIN">
+                <SuperAdminDashboard />
+              </ProtectedRoute>
+            } />
+            
             <Route path="/superadmin/comprobantes" element={
               <ProtectedRoute requiredRole="SUPER_ADMIN">
                 <RevisarComprobantes />
