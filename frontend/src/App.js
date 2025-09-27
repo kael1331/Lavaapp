@@ -2471,6 +2471,316 @@ const GestionAdmins = () => {
   );
 };
 
+// Configuración del Lavadero (Admin)
+const ConfiguracionLavadero = () => {
+  const { user } = useAuth();
+  const [configuracion, setConfiguracion] = useState({
+    hora_apertura: "08:00",
+    hora_cierre: "18:00",
+    duracion_turno_minutos: 60,
+    dias_laborales: [1, 2, 3, 4, 5], // Lunes a Viernes
+    alias_bancario: "lavadero.alias.mp",
+    precio_turno: 5000.0
+  });
+  const [diasNoLaborales, setDiasNoLaborales] = useState([]);
+  const [nuevoDiaNoLaboral, setNuevoDiaNoLaboral] = useState({
+    fecha: "",
+    motivo: ""
+  });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const diasSemana = [
+    { id: 1, nombre: "Lunes" },
+    { id: 2, nombre: "Martes" },
+    { id: 3, nombre: "Miércoles" },
+    { id: 4, nombre: "Jueves" },
+    { id: 5, nombre: "Viernes" },
+    { id: 6, nombre: "Sábado" },
+    { id: 7, nombre: "Domingo" }
+  ];
+
+  useEffect(() => {
+    fetchConfiguracion();
+    fetchDiasNoLaborales();
+  }, []);
+
+  const fetchConfiguracion = async () => {
+    try {
+      const response = await axios.get(`${API}/admin/configuracion`);
+      setConfiguracion(response.data);
+    } catch (error) {
+      console.error('Error fetching configuracion:', error);
+      // Si no hay configuración, usar valores por defecto
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchDiasNoLaborales = async () => {
+    try {
+      const response = await axios.get(`${API}/admin/dias-no-laborales`);
+      setDiasNoLaborales(response.data);
+    } catch (error) {
+      console.error('Error fetching dias no laborales:', error);
+    }
+  };
+
+  const handleConfigChange = (field, value) => {
+    setConfiguracion(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleDiaLaboralChange = (dia) => {
+    setConfiguracion(prev => ({
+      ...prev,
+      dias_laborales: prev.dias_laborales.includes(dia)
+        ? prev.dias_laborales.filter(d => d !== dia)
+        : [...prev.dias_laborales, dia].sort()
+    }));
+  };
+
+  const handleSaveConfiguracion = async () => {
+    setSaving(true);
+    try {
+      await axios.put(`${API}/admin/configuracion`, configuracion);
+      alert('Configuración guardada exitosamente');
+    } catch (error) {
+      alert(error.response?.data?.detail || 'Error al guardar configuración');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleAddDiaNoLaboral = async () => {
+    if (!nuevoDiaNoLaboral.fecha) {
+      alert('Por favor selecciona una fecha');
+      return;
+    }
+
+    try {
+      await axios.post(`${API}/admin/dias-no-laborales`, {
+        fecha: new Date(nuevoDiaNoLaboral.fecha + 'T00:00:00Z').toISOString(),
+        motivo: nuevoDiaNoLaboral.motivo
+      });
+      
+      setNuevoDiaNoLaboral({ fecha: "", motivo: "" });
+      fetchDiasNoLaborales();
+      alert('Día no laboral agregado exitosamente');
+    } catch (error) {
+      alert(error.response?.data?.detail || 'Error al agregar día no laboral');
+    }
+  };
+
+  const handleDeleteDiaNoLaboral = async (diaId) => {
+    if (window.confirm('¿Estás seguro de eliminar este día no laboral?')) {
+      try {
+        await axios.delete(`${API}/admin/dias-no-laborales/${diaId}`);
+        fetchDiasNoLaborales();
+        alert('Día no laboral eliminado exitosamente');
+      } catch (error) {
+        alert(error.response?.data?.detail || 'Error al eliminar día no laboral');
+      }
+    }
+  };
+
+  if (loading) {
+    return <div className="p-8">Cargando configuración...</div>;
+  }
+
+  return (
+    <div className="p-8 max-w-4xl mx-auto">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900">
+          Configuración del Lavadero
+        </h1>
+        <p className="text-gray-600 mt-2">
+          Configura los horarios, precios y días de trabajo de tu lavadero
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Configuración Básica */}
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h2 className="text-xl font-semibold mb-4">Configuración Básica</h2>
+          
+          <div className="space-y-4">
+            {/* Horarios */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Horarios de Atención
+              </label>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Apertura</label>
+                  <input
+                    type="time"
+                    value={configuracion.hora_apertura}
+                    onChange={(e) => handleConfigChange('hora_apertura', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Cierre</label>
+                  <input
+                    type="time"
+                    value={configuracion.hora_cierre}
+                    onChange={(e) => handleConfigChange('hora_cierre', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Duración del turno */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Duración del Turno (minutos)
+              </label>
+              <select
+                value={configuracion.duracion_turno_minutos}
+                onChange={(e) => handleConfigChange('duracion_turno_minutos', parseInt(e.target.value))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value={30}>30 minutos</option>
+                <option value={45}>45 minutos</option>
+                <option value={60}>1 hora</option>
+                <option value={90}>1.5 horas</option>
+                <option value={120}>2 horas</option>
+              </select>
+            </div>
+
+            {/* Precio */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Precio del Lavado ($)
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="100"
+                value={configuracion.precio_turno}
+                onChange={(e) => handleConfigChange('precio_turno', parseFloat(e.target.value))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+
+            {/* Alias bancario */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Alias Bancario (para transferencias)
+              </label>
+              <input
+                type="text"
+                value={configuracion.alias_bancario}
+                onChange={(e) => handleConfigChange('alias_bancario', e.target.value)}
+                placeholder="ej: lavadero.centro.mp"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+          </div>
+
+          <button
+            onClick={handleSaveConfiguracion}
+            disabled={saving}
+            className="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md disabled:opacity-50"
+          >
+            {saving ? 'Guardando...' : 'Guardar Configuración'}
+          </button>
+        </div>
+
+        {/* Días Laborales */}
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h2 className="text-xl font-semibold mb-4">Días Laborales</h2>
+          
+          <div className="space-y-3">
+            {diasSemana.map(dia => (
+              <label key={dia.id} className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={configuracion.dias_laborales.includes(dia.id)}
+                  onChange={() => handleDiaLaboralChange(dia.id)}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <span className="ml-3 text-sm text-gray-900">{dia.nombre}</span>
+              </label>
+            ))}
+          </div>
+
+          <div className="mt-6 pt-6 border-t">
+            <h3 className="text-lg font-medium mb-4">Días No Laborales Específicos</h3>
+            
+            {/* Agregar nuevo día */}
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Fecha
+                </label>
+                <input
+                  type="date"
+                  value={nuevoDiaNoLaboral.fecha}
+                  onChange={(e) => setNuevoDiaNoLaboral(prev => ({ ...prev, fecha: e.target.value }))}
+                  min={new Date().toISOString().split('T')[0]}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Motivo (opcional)
+                </label>
+                <input
+                  type="text"
+                  value={nuevoDiaNoLaboral.motivo}
+                  onChange={(e) => setNuevoDiaNoLaboral(prev => ({ ...prev, motivo: e.target.value }))}
+                  placeholder="ej: Feriado, Mantenimiento"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              
+              <button
+                onClick={handleAddDiaNoLaboral}
+                className="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-md"
+              >
+                Agregar Día No Laboral
+              </button>
+            </div>
+
+            {/* Lista de días no laborales */}
+            {diasNoLaborales.length > 0 && (
+              <div className="mt-4">
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Días marcados:</h4>
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {diasNoLaborales.map(dia => (
+                    <div key={dia.id} className="flex justify-between items-center bg-gray-50 p-2 rounded">
+                      <div>
+                        <span className="text-sm font-medium">
+                          {new Date(dia.fecha).toLocaleDateString()}
+                        </span>
+                        {dia.motivo && (
+                          <span className="text-xs text-gray-500 block">{dia.motivo}</span>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => handleDeleteDiaNoLaboral(dia.id)}
+                        className="text-red-600 hover:text-red-800 text-xs"
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Main App Component
 function App() {
   return (
