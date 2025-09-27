@@ -1168,7 +1168,7 @@ async def rechazar_comprobante(comprobante_id: str, rechazo_data: RechazarCompro
             "$set": {
                 "estado": EstadoPago.RECHAZADO,
                 "fecha_revision": datetime.now(timezone.utc),
-                "comentario_superadmin": comentario
+                "comentario_superadmin": rechazo_data.comentario
             }
         }
     )
