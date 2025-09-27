@@ -1331,6 +1331,114 @@ async def get_admin_password_info(admin_id: str, request: Request):
         "password_info": "Contraseña establecida" if admin_doc.get("password_hash") else "Sin contraseña"
     }
 
+# Crear admin desde Super Admin (para testing)
+@api_router.post("/superadmin/crear-admin")
+async def crear_admin_superadmin(admin_data: AdminLavaderoRegister, request: Request):
+    await get_super_admin_user(request)
+    
+    # Check if user already exists
+    existing_user = await get_user_by_email(admin_data.email)
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El email ya está registrado"
+        )
+    
+    # Check if lavadero name already exists (case-insensitive)
+    existing_lavadero = await db.lavaderos.find_one({
+        "nombre": {"$regex": f"^{admin_data.lavadero.nombre}$", "$options": "i"}
+    })
+    if existing_lavadero:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Ya existe un lavadero con ese nombre"
+        )
+    
+    # Create admin user
+    password_hash = get_password_hash(admin_data.password)
+    new_admin = User(
+        email=admin_data.email,
+        nombre=admin_data.nombre,
+        rol=UserRole.ADMIN,
+        password_hash=password_hash
+    )
+    
+    # Insert admin to database
+    admin_dict = new_admin.dict()
+    await db.users.insert_one(admin_dict)
+    
+    # Create lavadero
+    new_lavadero = Lavadero(
+        nombre=admin_data.lavadero.nombre,
+        direccion=admin_data.lavadero.direccion,
+        descripcion=admin_data.lavadero.descripcion,
+        admin_id=new_admin.id,
+        estado_operativo=EstadoAdmin.PENDIENTE_APROBACION
+    )
+    
+    # Insert lavadero to database
+    lavadero_dict = new_lavadero.dict()
+    await db.lavaderos.insert_one(lavadero_dict)
+    
+    return {
+        "message": "Admin y lavadero creados exitosamente por Super Admin",
+        "admin_id": new_admin.id,
+        "lavadero_id": new_lavadero.id,
+        "estado": "PENDIENTE_APROBACION - Usar 'Activar Lavadero' para activar sin pago"
+    }
+
+# Activar lavadero directamente (Super Admin - para testing)
+@api_router.post("/superadmin/activar-lavadero/{admin_id}")
+async def activar_lavadero_directo(admin_id: str, request: Request):
+    await get_super_admin_user(request)
+    
+    # Buscar admin
+    admin_doc = await db.users.find_one({"id": admin_id, "rol": UserRole.ADMIN})
+    if not admin_doc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Admin no encontrado"
+        )
+    
+    # Buscar lavadero del admin
+    lavadero_doc = await db.lavaderos.find_one({"admin_id": admin_id})
+    if not lavadero_doc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Lavadero no encontrado para este admin"
+        )
+    
+    # Activar lavadero por 30 días
+    fecha_vencimiento = datetime.now(timezone.utc) + timedelta(days=30)
+    await db.lavaderos.update_one(
+        {"admin_id": admin_id},
+        {
+            "$set": {
+                "estado_operativo": EstadoAdmin.ACTIVO,
+                "fecha_vencimiento": fecha_vencimiento
+            }
+        }
+    )
+    
+    # Crear pago mensualidad como confirmado (simulado)
+    config_super = await db.configuracion_superadmin.find_one({})
+    if config_super:
+        pago_mensualidad = PagoMensualidad(
+            admin_id=admin_id,
+            lavadero_id=lavadero_doc["id"],
+            monto=config_super.get("precio_mensualidad", 10000.0),
+            mes_año=datetime.now().strftime("%Y-%m"),
+            estado=EstadoPago.CONFIRMADO,
+            fecha_vencimiento=fecha_vencimiento
+        )
+        await db.pagos_mensualidad.insert_one(pago_mensualidad.dict())
+    
+    return {
+        "message": "Lavadero activado exitosamente (sin proceso de pago)",
+        "estado": "ACTIVO",
+        "vence": fecha_vencimiento.isoformat()
+    }
+
 # Health check
 @api_router.get("/health")
 async def health_check():
