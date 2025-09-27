@@ -2090,7 +2090,101 @@ const GestionAdmins = () => {
 
   return (
     <div className="p-8">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">Gestión de Administradores</h1>
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold text-gray-900">Gestión de Administradores</h1>
+        <button
+          onClick={() => setShowCreateForm(true)}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md"
+        >
+          Crear Nuevo Admin
+        </button>
+      </div>
+
+      {/* Formulario de Creación */}
+      {showCreateForm && (
+        <div className="bg-white p-6 rounded-lg shadow mb-6">
+          <h2 className="text-xl font-semibold mb-4">Crear Nuevo Administrador</h2>
+          <form onSubmit={handleCreateAdmin} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Nombre del Admin</label>
+                <input
+                  type="text"
+                  required
+                  value={createForm.nombre}
+                  onChange={(e) => setCreateForm({...createForm, nombre: e.target.value})}
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Email</label>
+                <input
+                  type="email"
+                  required
+                  value={createForm.email}
+                  onChange={(e) => setCreateForm({...createForm, email: e.target.value})}
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Contraseña</label>
+                <input
+                  type="password"
+                  required
+                  value={createForm.password}
+                  onChange={(e) => setCreateForm({...createForm, password: e.target.value})}
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Nombre del Lavadero</label>
+                <input
+                  type="text"
+                  required
+                  value={createForm.lavadero_nombre}
+                  onChange={(e) => setCreateForm({...createForm, lavadero_nombre: e.target.value})}
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700">Dirección del Lavadero</label>
+                <input
+                  type="text"
+                  required
+                  value={createForm.lavadero_direccion}
+                  onChange={(e) => setCreateForm({...createForm, lavadero_direccion: e.target.value})}
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700">Descripción (Opcional)</label>
+                <textarea
+                  value={createForm.lavadero_descripcion}
+                  onChange={(e) => setCreateForm({...createForm, lavadero_descripcion: e.target.value})}
+                  rows={3}
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                />
+              </div>
+            </div>
+            
+            <div className="flex space-x-2">
+              <button
+                type="submit"
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md"
+              >
+                Crear Admin
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowCreateForm(false)}
+                className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md"
+              >
+                Cancelar
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       <div className="bg-white shadow overflow-hidden sm:rounded-md">
         <div className="px-4 py-5 sm:px-6">
