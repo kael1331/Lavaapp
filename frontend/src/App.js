@@ -1531,6 +1531,11 @@ const AdminLogin = () => {
             <p>Email: kearcangel@gmail.com</p>
             <p>Contraseña: K@#l1331</p>
           </div>
+          <div className="mt-3 text-xs text-gray-500">
+            <p>• <strong>Super Admin:</strong> Gestiona todos los lavaderos y administradores</p>
+            <p>• <strong>Admin:</strong> Dueño de lavadero (se registra pagando mensualidad)</p>
+            <p>• <strong>Cliente:</strong> Usuario que reserva turnos en lavaderos</p>
+          </div>
         </div>
       </div>
     </div>
