@@ -41,8 +41,9 @@ api_router = APIRouter(prefix="/api")
 
 # User Models
 class UserRole(str):
-    ADMIN = "ADMIN"
-    EMPLEADO = "EMPLEADO"
+    SUPER_ADMIN = "SUPER_ADMIN"
+    ADMIN = "ADMIN"  # Dueño de lavadero
+    CLIENTE = "CLIENTE"  # Cliente que saca turnos
 
 class UserBase(BaseModel):
     email: EmailStr
