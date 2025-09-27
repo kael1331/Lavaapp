@@ -217,7 +217,12 @@ const Navigation = () => {
 
   const handleLogout = () => {
     logout();
-    navigate('/');
+    // Redirigir según el tipo de usuario
+    if (user.rol === 'SUPER_ADMIN' || user.rol === 'ADMIN') {
+      navigate('/admin-login');
+    } else {
+      navigate('/'); // Clientes van a la página principal
+    }
   };
 
   // No mostrar navegación en página principal, login de lavaderos, o login de admins
