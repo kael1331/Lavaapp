@@ -1473,6 +1473,61 @@ def main():
     else:
         print("❌ Cannot test voucher functionality - Super Admin login failed")
 
+    # SPECIFIC TASK: Test new file upload functionality
+    print("\n📋 SPECIFIC TASK: TEST NEW FILE UPLOAD FUNCTIONALITY")
+    print("🎯 Task: Test new file upload endpoint for payment vouchers")
+    
+    if super_admin_success and super_admin_token:
+        upload_results = tester.test_file_upload_comprobante_functionality(super_admin_token)
+        
+        # Summary of file upload testing results
+        print("\n📊 FILE UPLOAD TESTING SUMMARY:")
+        print("=" * 50)
+        print(f"✅ Juan Login Works: {upload_results['juan_login']}")
+        print(f"✅ Has Pending Payment: {upload_results['has_pending_payment']}")
+        print(f"✅ File Upload Success: {upload_results['file_upload_success']}")
+        print(f"✅ File Validation Works: {upload_results['file_validation_works']}")
+        print(f"✅ File Stored Correctly: {upload_results['file_stored_correctly']}")
+        print(f"✅ URL Accessible: {upload_results['url_accessible']}")
+        print(f"✅ Database Updated: {upload_results['database_updated']}")
+        
+        # Calculate upload test success rate
+        upload_checks = [
+            upload_results['juan_login'],
+            upload_results['has_pending_payment'],
+            upload_results['file_upload_success'],
+            upload_results['file_validation_works'],
+            upload_results['file_stored_correctly'],
+            upload_results['url_accessible'],
+            upload_results['database_updated']
+        ]
+        
+        upload_success_count = sum(upload_checks)
+        upload_total = len(upload_checks)
+        upload_success_rate = (upload_success_count / upload_total) * 100
+        
+        print(f"\n🎯 FILE UPLOAD TEST SUCCESS RATE: {upload_success_count}/{upload_total} ({upload_success_rate:.1f}%)")
+        
+        if upload_success_rate == 100:
+            print("🎉 FILE UPLOAD FUNCTIONALITY WORKING PERFECTLY!")
+            print("   ✅ File upload with multipart/form-data works")
+            print("   ✅ File validation (size and type) works")
+            print("   ✅ Files stored correctly in /app/uploads/comprobantes/")
+            print("   ✅ URLs accessible and database updated")
+        else:
+            print("⚠️  FILE UPLOAD FUNCTIONALITY HAS ISSUES")
+            failed_upload_checks = []
+            if not upload_results['juan_login']: failed_upload_checks.append("Juan login")
+            if not upload_results['has_pending_payment']: failed_upload_checks.append("No pending payment")
+            if not upload_results['file_upload_success']: failed_upload_checks.append("File upload failed")
+            if not upload_results['file_validation_works']: failed_upload_checks.append("File validation")
+            if not upload_results['file_stored_correctly']: failed_upload_checks.append("File storage")
+            if not upload_results['url_accessible']: failed_upload_checks.append("URL accessibility")
+            if not upload_results['database_updated']: failed_upload_checks.append("Database update")
+            print(f"   ❌ Issues: {', '.join(failed_upload_checks)}")
+    else:
+        print("❌ Cannot test file upload functionality - Super Admin login failed")
+
     # SPECIFIC TASK: Create 2 new admins for testing
     print("\n📋 SPECIFIC TASK: CREATE 2 NEW ADMINS FOR TESTING")
     print("🎯 Task: Create María and Juan with their lavaderos for comprehensive testing")
