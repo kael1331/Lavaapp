@@ -599,6 +599,241 @@ class AuthenticationAPITester:
         
         return results
     
+    # ========== NEW FILE UPLOAD FUNCTIONALITY TESTS ==========
+    
+    def test_file_upload_comprobante_functionality(self, super_admin_token):
+        """
+        SPECIFIC TASK: Test new file upload functionality for payment vouchers
+        
+        Requirements:
+        1. Login as Juan (juan@lavaderonorte.com / juan123)
+        2. Create test image files
+        3. Test POST /comprobante-mensualidad with multipart/form-data
+        4. Verify file validation (type and size)
+        5. Verify file storage in /app/uploads/comprobantes/
+        6. Verify database comprobante creation
+        7. Verify URL accessibility
+        """
+        print("\n🎯 TESTING NEW FILE UPLOAD FUNCTIONALITY FOR PAYMENT VOUCHERS...")
+        print("=" * 70)
+        
+        results = {
+            'juan_login': False,
+            'has_pending_payment': False,
+            'file_upload_success': False,
+            'file_validation_works': False,
+            'file_stored_correctly': False,
+            'url_accessible': False,
+            'database_updated': False
+        }
+        
+        # Step 1: Login as Juan
+        print("\n1️⃣ Login as Juan (juan@lavaderonorte.com)...")
+        juan_login_success, juan_token, juan_user = self.test_login(
+            "juan@lavaderonorte.com", "juan123", "Juan Pérez (File Upload Test)"
+        )
+        
+        if not juan_login_success or not juan_token:
+            print("❌ Juan login failed - cannot test file upload")
+            return results
+        
+        results['juan_login'] = True
+        print("✅ Juan login successful")
+        
+        # Step 2: Check if Juan has pending payment
+        print("\n2️⃣ Checking if Juan has pending payment...")
+        pago_success, pago_data = self.run_test(
+            "Check Pending Payment (Juan)",
+            "GET",
+            "admin/pago-pendiente",
+            200,
+            token=juan_token
+        )
+        
+        if not pago_success or not pago_data.get('tiene_pago_pendiente'):
+            print("❌ Juan doesn't have pending payment - cannot test file upload")
+            return results
+        
+        results['has_pending_payment'] = True
+        print("✅ Juan has pending payment available")
+        print(f"   Pago ID: {pago_data.get('pago_id')}")
+        print(f"   Monto: ${pago_data.get('monto')}")
+        
+        # Step 3: Create test image files
+        print("\n3️⃣ Creating test image files...")
+        import tempfile
+        import os
+        
+        # Create a small test image (valid JPEG)
+        test_image_content = b'\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x01\x00H\x00H\x00\x00\xff\xdb\x00C\x00\x08\x06\x06\x07\x06\x05\x08\x07\x07\x07\t\t\x08\n\x0c\x14\r\x0c\x0b\x0b\x0c\x19\x12\x13\x0f\x14\x1d\x1a\x1f\x1e\x1d\x1a\x1c\x1c $.\' ",#\x1c\x1c(7),01444\x1f\'9=82<.342\xff\xc0\x00\x11\x08\x00\x01\x00\x01\x01\x01\x11\x00\x02\x11\x01\x03\x11\x01\xff\xc4\x00\x14\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x08\xff\xc4\x00\x14\x10\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xda\x00\x0c\x03\x01\x00\x02\x11\x03\x11\x00\x3f\x00\xaa\xff\xd9'
+        
+        # Create temporary files for testing
+        with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as valid_file:
+            valid_file.write(test_image_content)
+            valid_file_path = valid_file.name
+        
+        # Create a large file for size validation test (simulate 6MB file)
+        large_content = b'x' * (6 * 1024 * 1024)  # 6MB
+        with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as large_file:
+            large_file.write(large_content)
+            large_file_path = large_file.name
+        
+        # Create invalid file type
+        with tempfile.NamedTemporaryFile(suffix='.txt', delete=False) as invalid_file:
+            invalid_file.write(b'This is not an image file')
+            invalid_file_path = invalid_file.name
+        
+        try:
+            # Step 4: Test valid file upload
+            print("\n4️⃣ Testing valid file upload...")
+            
+            url = f"{self.base_url}/comprobante-mensualidad"
+            headers = {'Authorization': f'Bearer {juan_token}'}
+            
+            with open(valid_file_path, 'rb') as f:
+                files = {'imagen': ('test_comprobante.jpg', f, 'image/jpeg')}
+                
+                self.tests_run += 1
+                print(f"🔍 Testing File Upload - Valid JPEG...")
+                print(f"   URL: {url}")
+                
+                try:
+                    response = requests.post(url, files=files, headers=headers)
+                    
+                    if response.status_code == 200:
+                        self.tests_passed += 1
+                        results['file_upload_success'] = True
+                        print("✅ Valid file upload successful")
+                        
+                        response_data = response.json()
+                        print(f"   Comprobante ID: {response_data.get('comprobante_id')}")
+                        print(f"   Image URL: {response_data.get('imagen_url')}")
+                        print(f"   Estado: {response_data.get('estado')}")
+                        
+                        # Test URL accessibility
+                        imagen_url = response_data.get('imagen_url')
+                        if imagen_url:
+                            print("\n   Testing image URL accessibility...")
+                            image_full_url = f"https://laundry-mgmt-1.preview.emergentagent.com{imagen_url}"
+                            
+                            try:
+                                img_response = requests.get(image_full_url)
+                                if img_response.status_code == 200:
+                                    results['url_accessible'] = True
+                                    print("✅ Uploaded image is accessible via URL")
+                                else:
+                                    print(f"❌ Image URL not accessible - Status: {img_response.status_code}")
+                            except Exception as e:
+                                print(f"❌ Error accessing image URL: {str(e)}")
+                        
+                        # Verify database was updated
+                        print("\n   Verifying database was updated...")
+                        verify_success, verify_data = self.run_test(
+                            "Verify Database Updated",
+                            "GET",
+                            "admin/pago-pendiente",
+                            200,
+                            token=juan_token
+                        )
+                        
+                        if verify_success and verify_data.get('tiene_comprobante'):
+                            results['database_updated'] = True
+                            print("✅ Database updated - comprobante created")
+                        else:
+                            print("❌ Database not updated properly")
+                            
+                    else:
+                        print(f"❌ Valid file upload failed - Status: {response.status_code}")
+                        print(f"   Response: {response.text}")
+                        
+                except Exception as e:
+                    print(f"❌ File upload error: {str(e)}")
+            
+            # Step 5: Test file validation - large file
+            print("\n5️⃣ Testing file size validation (should fail)...")
+            
+            with open(large_file_path, 'rb') as f:
+                files = {'imagen': ('large_file.jpg', f, 'image/jpeg')}
+                
+                self.tests_run += 1
+                print(f"🔍 Testing File Upload - Large File (should fail)...")
+                
+                try:
+                    response = requests.post(url, files=files, headers=headers)
+                    
+                    if response.status_code == 400:
+                        self.tests_passed += 1
+                        print("✅ Large file correctly rejected")
+                        print(f"   Error message: {response.json().get('detail', 'No detail')}")
+                        results['file_validation_works'] = True
+                    else:
+                        print(f"❌ Large file validation failed - Status: {response.status_code}")
+                        print(f"   Response: {response.text}")
+                        
+                except Exception as e:
+                    print(f"❌ Large file test error: {str(e)}")
+            
+            # Step 6: Test file type validation
+            print("\n6️⃣ Testing file type validation (should fail)...")
+            
+            with open(invalid_file_path, 'rb') as f:
+                files = {'imagen': ('invalid_file.txt', f, 'text/plain')}
+                
+                self.tests_run += 1
+                print(f"🔍 Testing File Upload - Invalid Type (should fail)...")
+                
+                try:
+                    response = requests.post(url, files=files, headers=headers)
+                    
+                    if response.status_code == 400:
+                        self.tests_passed += 1
+                        print("✅ Invalid file type correctly rejected")
+                        print(f"   Error message: {response.json().get('detail', 'No detail')}")
+                        if not results['file_validation_works']:
+                            results['file_validation_works'] = True
+                    else:
+                        print(f"❌ File type validation failed - Status: {response.status_code}")
+                        print(f"   Response: {response.text}")
+                        
+                except Exception as e:
+                    print(f"❌ Invalid file test error: {str(e)}")
+            
+            # Step 7: Check file storage on server
+            print("\n7️⃣ Checking file storage on server...")
+            try:
+                # List files in uploads directory
+                import subprocess
+                result = subprocess.run(['ls', '-la', '/app/uploads/comprobantes/'], 
+                                      capture_output=True, text=True)
+                
+                if result.returncode == 0:
+                    files_list = result.stdout
+                    print("✅ Upload directory accessible")
+                    print(f"   Directory contents:\n{files_list}")
+                    
+                    # Check if any files were created
+                    if 'comprobante_' in files_list:
+                        results['file_stored_correctly'] = True
+                        print("✅ Comprobante files found in storage directory")
+                    else:
+                        print("❌ No comprobante files found in storage directory")
+                else:
+                    print(f"❌ Cannot access upload directory: {result.stderr}")
+                    
+            except Exception as e:
+                print(f"❌ Error checking file storage: {str(e)}")
+        
+        finally:
+            # Clean up temporary files
+            try:
+                os.unlink(valid_file_path)
+                os.unlink(large_file_path)
+                os.unlink(invalid_file_path)
+            except:
+                pass
+        
+        return results
+    
     # ========== SPECIFIC TASK: CREATE 2 NEW ADMINS FOR TESTING ==========
     
     def test_create_two_new_admins_for_testing(self, super_admin_token):
