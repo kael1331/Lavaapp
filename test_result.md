@@ -135,6 +135,18 @@ backend:
         agent: "testing"
         comment: "✅ SISTEMA DE CREDENCIALES MEJORADO - Probado endpoint /superadmin/credenciales-testing con autenticación Super Admin. De 3 admins encontrados, 2 muestran contraseñas reales (admin123, carlos123) y solo 1 muestra 'contraseña_no_encontrada'. Sistema funciona correctamente mostrando más contraseñas que antes. Tabla temp_credentials operativa."
 
+  - task: "Implementar endpoints de configuración de lavadero"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ NUEVOS ENDPOINTS DE CONFIGURACIÓN FUNCIONANDO PERFECTAMENTE - Probados todos los endpoints solicitados: 1) GET /admin/configuracion (obtiene configuración, crea por defecto si no existe), 2) PUT /admin/configuracion (actualiza configuración con valores de prueba), 3) GET /admin/dias-no-laborales (obtiene días no laborales), 4) POST /admin/dias-no-laborales (agrega día no laboral), 5) DELETE /admin/dias-no-laborales/{dia_id} (elimina día no laboral). AUTENTICACIÓN: ✅ Admin regular (carlos@lavaderosur.com/carlos123) puede acceder a todos los endpoints /admin/, ✅ Super Admin (kearcangel@gmail.com) correctamente bloqueado de endpoints /admin/ (403 Forbidden). CORRECCIÓN APLICADA: Solucioné error 500 de serialización ObjectId en endpoints GET que devolvían documentos MongoDB sin procesar."
+
 frontend:
   - task: "Modificar botón toggle para activar/desactivar lavaderos"
     implemented: true
