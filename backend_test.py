@@ -1190,6 +1190,54 @@ def main():
     else:
         print("⚠️  Cannot test Super Admin blocking - Super Admin login failed")
     
+    # SPECIFIC TASK: Test payment voucher functionality for PENDIENTE admins
+    print("\n📋 SPECIFIC TASK: PAYMENT VOUCHER FUNCTIONALITY FOR PENDIENTE ADMINS")
+    print("🎯 Task: Verify and test payment voucher upload for admins with PENDIENTE_APROBACION status")
+    
+    if super_admin_success and super_admin_token:
+        voucher_results = tester.test_payment_voucher_functionality(super_admin_token)
+        
+        # Summary of voucher testing results
+        print("\n📊 VOUCHER TESTING SUMMARY:")
+        print("=" * 50)
+        print(f"✅ Test Admins Found: {voucher_results['admins_found']}")
+        print(f"✅ Juan Login Works: {voucher_results['juan_login']}")
+        print(f"✅ Juan Has Payment: {voucher_results['juan_has_payment']}")
+        print(f"✅ Pago Pendiente Endpoint: {voucher_results['pago_pendiente_works']}")
+        print(f"✅ Voucher Upload Works: {voucher_results['voucher_upload_works']}")
+        
+        # Calculate voucher test success rate
+        voucher_checks = [
+            voucher_results['admins_found'],
+            voucher_results['juan_login'],
+            voucher_results['juan_has_payment'],
+            voucher_results['pago_pendiente_works'],
+            voucher_results['voucher_upload_works']
+        ]
+        
+        voucher_success_count = sum(voucher_checks)
+        voucher_total = len(voucher_checks)
+        voucher_success_rate = (voucher_success_count / voucher_total) * 100
+        
+        print(f"\n🎯 VOUCHER TEST SUCCESS RATE: {voucher_success_count}/{voucher_total} ({voucher_success_rate:.1f}%)")
+        
+        if voucher_success_rate == 100:
+            print("🎉 VOUCHER FUNCTIONALITY WORKING PERFECTLY!")
+            print("   ✅ Juan (PENDIENTE admin) can upload payment vouchers")
+            print("   ✅ All payment endpoints working correctly")
+            print("   ✅ Fix for /superadmin/crear-admin payment creation is working")
+        else:
+            print("⚠️  VOUCHER FUNCTIONALITY HAS ISSUES")
+            failed_voucher_checks = []
+            if not voucher_results['admins_found']: failed_voucher_checks.append("Test admins not found")
+            if not voucher_results['juan_login']: failed_voucher_checks.append("Juan login failed")
+            if not voucher_results['juan_has_payment']: failed_voucher_checks.append("Juan missing payment")
+            if not voucher_results['pago_pendiente_works']: failed_voucher_checks.append("Pago pendiente endpoint")
+            if not voucher_results['voucher_upload_works']: failed_voucher_checks.append("Voucher upload")
+            print(f"   ❌ Issues: {', '.join(failed_voucher_checks)}")
+    else:
+        print("❌ Cannot test voucher functionality - Super Admin login failed")
+
     # SPECIFIC TASK: Create 2 new admins for testing
     print("\n📋 SPECIFIC TASK: CREATE 2 NEW ADMINS FOR TESTING")
     print("🎯 Task: Create María and Juan with their lavaderos for comprehensive testing")
