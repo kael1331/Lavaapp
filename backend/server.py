@@ -1866,6 +1866,29 @@ app.add_middleware(
 # Mount static files DESPUÉS de CORS
 app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 
+# Endpoint específico para servir imágenes de comprobantes (alternativa si los archivos estáticos fallan)
+@api_router.get("/uploads/comprobantes/{filename}")
+async def get_comprobante_image(filename: str):
+    file_path = COMPROBANTES_DIR / filename
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Archivo no encontrado")
+    
+    # Determinar content type basado en extensión
+    extension = filename.lower().split('.')[-1]
+    content_types = {
+        'jpg': 'image/jpeg',
+        'jpeg': 'image/jpeg', 
+        'png': 'image/png',
+        'gif': 'image/gif',
+        'webp': 'image/webp'
+    }
+    content_type = content_types.get(extension, 'application/octet-stream')
+    
+    with open(file_path, "rb") as file:
+        content = file.read()
+    
+    return Response(content, media_type=content_type)
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
