@@ -140,13 +140,16 @@ frontend:
     implemented: true
     working: false
     file: "/app/frontend/src/App.js"
-    stuck_count: 1
+    stuck_count: 2
     priority: "high"
     needs_retesting: true
     status_history:
       - working: false
         agent: "main"
         comment: "Modificado handleActivarLavadero a handleToggleLavadero y actualizado botón para mostrar Activar/Desactivar según estado. Problema con routing - la página /superadmin/admins muestra contenido de cliente en lugar del dashboard de administración"
+      - working: false
+        agent: "main"
+        comment: "Agregada ruta /superadmin-dashboard y creado componente SuperAdminDashboard. Sin embargo, persiste problema: al navegar a /superadmin-dashboard muestra contenido de cliente. Posible problema con ProtectedRoute o autenticación de sesión."
 
 metadata:
   created_by: "main_agent"
