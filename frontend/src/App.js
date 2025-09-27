@@ -1457,6 +1457,7 @@ const AdminLogin = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
+  const [credencialesAdmin, setCredencialesAdmin] = useState([]);
   const { user, login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
 
