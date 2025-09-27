@@ -291,19 +291,35 @@ const Navigation = () => {
   );
 };
 
-// Login Component
+// Login Component (Solo para Clientes)
 const Login = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { user, login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
+  const location = window.location;
 
   useEffect(() => {
     // Si ya está logueado, redirigir al dashboard
     if (user) {
       navigate('/dashboard');
+      return;
     }
+
+    // Verificar que el acceso sea válido (desde selección de lavadero o es cliente)
+    const isFromLavaderoSelection = sessionStorage.getItem('from_lavadero_selection');
+    const isClientLogout = sessionStorage.getItem('client_logout');
+    
+    if (!isFromLavaderoSelection && !isClientLogout) {
+      // Si no viene de selección de lavadero ni es logout de cliente, redirigir a home
+      navigate('/');
+      return;
+    }
+    
+    // Limpiar flags después de verificar
+    sessionStorage.removeItem('from_lavadero_selection');
+    sessionStorage.removeItem('client_logout');
   }, [user, navigate]);
 
   const handleSubmit = async (e) => {
