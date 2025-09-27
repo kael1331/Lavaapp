@@ -235,7 +235,7 @@ const Navigation = () => {
           {user.rol === 'SUPER_ADMIN' && (
             <>
               <Link to="/superadmin/lavaderos" className="hover:text-gray-300">Gestión de Lavaderos</Link>
-              <Link to="/superadmin/comprobantes" className="hover:text-gray-300">Comprobantes</Link>
+              <Link to="/superadmin/comprobantes" className="hover:text-gray-300">Revisar Comprobantes</Link>
             </>
           )}
           
