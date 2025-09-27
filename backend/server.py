@@ -1,6 +1,7 @@
-from fastapi import FastAPI, APIRouter, Depends, HTTPException, status, Request, Response
+from fastapi import FastAPI, APIRouter, Depends, HTTPException, status, Request, Response, File, UploadFile
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from starlette.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, Field, EmailStr
 from typing import List, Optional, Union
@@ -14,6 +15,7 @@ import logging
 import uuid
 import requests
 import json
+import shutil
 
 # Load environment variables
 ROOT_DIR = Path(__file__).parent
