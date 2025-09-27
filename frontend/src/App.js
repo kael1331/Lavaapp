@@ -864,6 +864,314 @@ const AdminPanel = () => {
   );
 };
 
+// Página de Inicio (Dual)
+const HomePage = () => {
+  const [lavaderos, setLavaderos] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchLavaderos();
+  }, []);
+
+  const fetchLavaderos = async () => {
+    try {
+      const response = await axios.get(`${API}/lavaderos-operativos`);
+      setLavaderos(response.data);
+    } catch (error) {
+      console.error('Error fetching lavaderos:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      {/* Header */}
+      <div className="bg-white shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-6">
+            <div className="flex items-center">
+              <h1 className="text-3xl font-bold text-gray-900">🚿 LavApp</h1>
+              <span className="ml-3 text-sm text-gray-500">Sistema de Gestión de Lavaderos</span>
+            </div>
+            
+            {/* Sección mínima para administradores */}
+            <div className="flex items-center space-x-4">
+              <Link 
+                to="/admin-login" 
+                className="text-sm bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 rounded-md transition-colors"
+              >
+                👨‍💼 Administradores
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Contenido Principal */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {/* Sección Principal - Selección de Lavaderos */}
+        <div className="text-center mb-12">
+          <h2 className="text-4xl font-extrabold text-gray-900 mb-4">
+            Reserva tu turno en el lavadero
+          </h2>
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            Selecciona tu lavadero preferido y agenda tu turno de forma rápida y segura
+          </p>
+        </div>
+
+        {/* Lista de Lavaderos */}
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="text-xl text-gray-600">Cargando lavaderos disponibles...</div>
+          </div>
+        ) : lavaderos.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="text-xl text-gray-600 mb-4">
+              😔 No hay lavaderos operativos en este momento
+            </div>
+            <p className="text-gray-500">
+              Por favor intenta más tarde o contacta al administrador
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {lavaderos.map((lavadero) => (
+              <div key={lavadero.id} className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden">
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xl font-semibold text-gray-900">{lavadero.nombre}</h3>
+                    <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full">
+                      Operativo
+                    </span>
+                  </div>
+                  
+                  <p className="text-gray-600 mb-2">
+                    📍 {lavadero.direccion}
+                  </p>
+                  
+                  {lavadero.descripcion && (
+                    <p className="text-sm text-gray-500 mb-4">
+                      {lavadero.descripcion}
+                    </p>
+                  )}
+                  
+                  <Link
+                    to={`/lavadero/${lavadero.id}/login`}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors text-center block"
+                  >
+                    Seleccionar Lavadero
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Información adicional */}
+        <div className="mt-16 bg-white rounded-lg shadow-sm p-8">
+          <div className="text-center mb-8">
+            <h3 className="text-2xl font-bold text-gray-900 mb-4">¿Cómo funciona?</h3>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl">🏪</span>
+              </div>
+              <h4 className="text-lg font-semibold text-gray-900 mb-2">1. Selecciona tu lavadero</h4>
+              <p className="text-gray-600">Elige el lavadero más conveniente para ti</p>
+            </div>
+            
+            <div className="text-center">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl">📅</span>
+              </div>
+              <h4 className="text-lg font-semibold text-gray-900 mb-2">2. Agenda tu turno</h4>
+              <p className="text-gray-600">Selecciona el día y horario que prefieras</p>
+            </div>
+            
+            <div className="text-center">
+              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl">💳</span>
+              </div>
+              <h4 className="text-lg font-semibold text-gray-900 mb-2">3. Paga y confirma</h4>
+              <p className="text-gray-600">Realiza el pago y sube tu comprobante</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Login específico por lavadero
+const LavaderoLogin = () => {
+  const { lavaderoId } = useParams();
+  const [lavadero, setLavadero] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Por ahora simulamos obtener datos del lavadero
+    // En el futuro implementaremos el endpoint específico
+    setLavadero({
+      id: lavaderoId,
+      nombre: "Lavadero Demo",
+      direccion: "Dirección Demo"
+    });
+    setLoading(false);
+  }, [lavaderoId]);
+
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center">Cargando...</div>;
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="max-w-md w-full space-y-8">
+        <div className="text-center">
+          <Link to="/" className="text-blue-600 hover:text-blue-500 text-sm">
+            ← Volver a selección de lavaderos
+          </Link>
+          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
+            {lavadero?.nombre}
+          </h2>
+          <p className="mt-2 text-sm text-gray-600">
+            Inicia sesión o regístrate como cliente
+          </p>
+        </div>
+
+        {/* Aquí irá el formulario de login específico del lavadero */}
+        <div className="bg-blue-50 p-4 rounded-md">
+          <p className="text-sm text-blue-800">
+            🚧 Funcionalidad en desarrollo: Login específico por lavadero
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Login para Administradores
+const AdminLogin = () => {
+  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showRegister, setShowRegister] = useState(false);
+  const { login } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    const result = await login(formData.email, formData.password);
+    
+    if (result.success) {
+      navigate('/dashboard');
+    } else {
+      setError(result.error);
+    }
+    
+    setLoading(false);
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="max-w-md w-full space-y-8">
+        <div className="text-center">
+          <Link to="/" className="text-blue-600 hover:text-blue-500 text-sm">
+            ← Volver al inicio
+          </Link>
+          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
+            👨‍💼 Administradores
+          </h2>
+          <p className="mt-2 text-sm text-gray-600">
+            {showRegister ? 'Registra tu lavadero' : 'Inicia sesión para gestionar tu lavadero'}
+          </p>
+        </div>
+
+        {!showRegister ? (
+          // Login Form
+          <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+            {error && (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                {error}
+              </div>
+            )}
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Email</label>
+              <input
+                type="email"
+                required
+                value={formData.email}
+                onChange={(e) => setFormData({...formData, email: e.target.value})}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Contraseña</label>
+              <input
+                type="password"
+                required
+                value={formData.password}
+                onChange={(e) => setFormData({...formData, password: e.target.value})}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+            >
+              {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+            </button>
+            
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => setShowRegister(true)}
+                className="text-blue-600 hover:text-blue-500"
+              >
+                ¿Nuevo lavadero? Regístrate aquí
+              </button>
+            </div>
+          </form>
+        ) : (
+          // Register Form (placeholder)
+          <div className="mt-8 space-y-6">
+            <div className="bg-yellow-50 p-4 rounded-md">
+              <p className="text-sm text-yellow-800">
+                🚧 Funcionalidad en desarrollo: Registro de admins con lavaderos
+              </p>
+            </div>
+            
+            <button
+              onClick={() => setShowRegister(false)}
+              className="w-full text-center text-blue-600 hover:text-blue-500"
+            >
+              ← Volver al login
+            </button>
+          </div>
+        )}
+
+        {/* Información para Super Admin */}
+        <div className="mt-8 p-4 bg-gray-50 rounded-lg">
+          <h3 className="font-semibold text-gray-800">Super Administrador:</h3>
+          <div className="mt-2 text-sm text-gray-700">
+            <p>Email: kearcangel@gmail.com</p>
+            <p>Contraseña: K@#l1331</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Main App Component
 function App() {
   return (
@@ -873,6 +1181,16 @@ function App() {
           <Navigation />
           
           <Routes>
+            {/* Página principal dual */}
+            <Route path="/" element={<HomePage />} />
+            
+            {/* Login específico por lavadero */}
+            <Route path="/lavadero/:lavaderoId/login" element={<LavaderoLogin />} />
+            
+            {/* Login para administradores */}
+            <Route path="/admin-login" element={<AdminLogin />} />
+            
+            {/* Rutas antiguas (mantenidas para compatibilidad) */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             
@@ -899,8 +1217,6 @@ function App() {
                 <AdminPanel />
               </ProtectedRoute>
             } />
-            
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </div>
       </BrowserRouter>
