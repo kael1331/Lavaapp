@@ -1190,9 +1190,7 @@ const RegisterAdminForm = ({ onSuccess }) => {
         }
       };
 
-      console.log('Registrando admin con lavadero:', requestData);
       const response = await axios.post(`${API}/register-admin`, requestData);
-      console.log('Resultado del registro:', response.data);
       
       setRegistrationResult(response.data);
     } catch (error) {
