@@ -1887,6 +1887,18 @@ function App() {
                 <AdminPanel />
               </ProtectedRoute>
             } />
+            
+            <Route path="/admin/comprobante-pago" element={
+              <ProtectedRoute requiredRole="ADMIN">
+                <SubirComprobante />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/superadmin/comprobantes" element={
+              <ProtectedRoute requiredRole="SUPER_ADMIN">
+                <RevisarComprobantes />
+              </ProtectedRoute>
+            } />
           </Routes>
         </div>
       </BrowserRouter>
