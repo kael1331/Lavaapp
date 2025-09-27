@@ -407,12 +407,20 @@ const Register = () => {
     email: '',
     password: '',
     nombre: '',
-    rol: 'EMPLEADO'
+    rol: 'CLIENTE'
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { register } = useAuth();
+  const { user, register } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Si ya está logueado, redirigir al dashboard
+    if (user) {
+      navigate('/dashboard');
+    }
+  }, [user, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
