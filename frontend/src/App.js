@@ -2170,6 +2170,12 @@ function App() {
                 <RevisarComprobantes />
               </ProtectedRoute>
             } />
+            
+            <Route path="/superadmin/admins" element={
+              <ProtectedRoute requiredRole="SUPER_ADMIN">
+                <GestionAdmins />
+              </ProtectedRoute>
+            } />
           </Routes>
         </div>
       </BrowserRouter>
