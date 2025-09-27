@@ -1175,6 +1175,152 @@ async def rechazar_comprobante(comprobante_id: str, rechazo_data: RechazarCompro
     
     return {"message": "Comprobante rechazado"}
 
+# ========== ENDPOINTS DE GESTIÓN DE ADMINS (SUPER ADMIN) ==========
+
+# Ver todos los admins (Super Admin)
+@api_router.get("/superadmin/admins") 
+async def get_all_admins(request: Request):
+    await get_super_admin_user(request)
+    
+    # Pipeline para obtener admins con información de sus lavaderos
+    pipeline = [
+        {"$match": {"rol": UserRole.ADMIN}},
+        {
+            "$lookup": {
+                "from": "lavaderos",
+                "localField": "id",
+                "foreignField": "admin_id",
+                "as": "lavadero"
+            }
+        },
+        {"$sort": {"created_at": -1}}
+    ]
+    
+    admins = await db.users.aggregate(pipeline).to_list(1000)
+    
+    result = []
+    for admin in admins:
+        lavadero_info = admin["lavadero"][0] if admin["lavadero"] else None
+        result.append({
+            "admin_id": admin["id"],
+            "nombre": admin["nombre"],
+            "email": admin["email"],
+            "password_hash": admin.get("password_hash", "N/A"),
+            "created_at": admin["created_at"],
+            "is_active": admin["is_active"],
+            "google_id": admin.get("google_id"),
+            "lavadero": {
+                "id": lavadero_info["id"] if lavadero_info else None,
+                "nombre": lavadero_info["nombre"] if lavadero_info else "Sin lavadero",
+                "estado_operativo": lavadero_info["estado_operativo"] if lavadero_info else "N/A",
+                "fecha_vencimiento": lavadero_info.get("fecha_vencimiento") if lavadero_info else None
+            }
+        })
+    
+    return result
+
+class AdminUpdateRequest(BaseModel):
+    nombre: Optional[str] = None
+    email: Optional[EmailStr] = None
+    password: Optional[str] = None
+    is_active: Optional[bool] = None
+
+# Actualizar admin (Super Admin)
+@api_router.put("/superadmin/admins/{admin_id}")
+async def update_admin(admin_id: str, update_data: AdminUpdateRequest, request: Request):
+    await get_super_admin_user(request)
+    
+    # Verificar que el admin existe
+    admin_doc = await db.users.find_one({"id": admin_id, "rol": UserRole.ADMIN})
+    if not admin_doc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Admin no encontrado"
+        )
+    
+    # Preparar datos de actualización
+    update_fields = {}
+    if update_data.nombre is not None:
+        update_fields["nombre"] = update_data.nombre
+    if update_data.email is not None:
+        # Verificar que el email no esté en uso por otro usuario
+        existing_user = await db.users.find_one({"email": update_data.email, "id": {"$ne": admin_id}})
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="El email ya está en uso por otro usuario"
+            )
+        update_fields["email"] = update_data.email
+    if update_data.password is not None:
+        update_fields["password_hash"] = get_password_hash(update_data.password)
+    if update_data.is_active is not None:
+        update_fields["is_active"] = update_data.is_active
+    
+    if not update_fields:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No hay campos para actualizar"
+        )
+    
+    # Actualizar admin
+    await db.users.update_one(
+        {"id": admin_id},
+        {"$set": update_fields}
+    )
+    
+    return {"message": "Admin actualizado correctamente"}
+
+# Eliminar admin (Super Admin)
+@api_router.delete("/superadmin/admins/{admin_id}")
+async def delete_admin(admin_id: str, request: Request):
+    await get_super_admin_user(request)
+    
+    # Verificar que el admin existe
+    admin_doc = await db.users.find_one({"id": admin_id, "rol": UserRole.ADMIN})
+    if not admin_doc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Admin no encontrado"
+        )
+    
+    # Buscar y eliminar lavadero asociado
+    lavadero_doc = await db.lavaderos.find_one({"admin_id": admin_id})
+    if lavadero_doc:
+        # Eliminar datos relacionados del lavadero
+        await db.lavaderos.delete_one({"admin_id": admin_id})
+        await db.pagos_mensualidad.delete_many({"admin_id": admin_id})
+        await db.comprobantes_pago_mensualidad.delete_many({"admin_id": admin_id})
+        await db.configuracion_lavadero.delete_many({"lavadero_id": lavadero_doc["id"]})
+        await db.turnos.delete_many({"lavadero_id": lavadero_doc["id"]})
+        await db.dias_no_laborales.delete_many({"lavadero_id": lavadero_doc["id"]})
+    
+    # Eliminar admin
+    await db.users.delete_one({"id": admin_id})
+    
+    return {"message": "Admin y todos sus datos asociados eliminados correctamente"}
+
+# Ver contraseña de admin (Super Admin)
+@api_router.get("/superadmin/admins/{admin_id}/password")
+async def get_admin_password_info(admin_id: str, request: Request):
+    await get_super_admin_user(request)
+    
+    admin_doc = await db.users.find_one({"id": admin_id, "rol": UserRole.ADMIN})
+    if not admin_doc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Admin no encontrado"
+        )
+    
+    return {
+        "admin_id": admin_id,
+        "email": admin_doc["email"],
+        "nombre": admin_doc["nombre"],
+        "has_password": admin_doc.get("password_hash") is not None,
+        "is_google_user": admin_doc.get("google_id") is not None,
+        # Por seguridad, no devolvemos el hash completo, solo información
+        "password_info": "Contraseña establecida" if admin_doc.get("password_hash") else "Sin contraseña"
+    }
+
 # Health check
 @api_router.get("/health")
 async def health_check():
