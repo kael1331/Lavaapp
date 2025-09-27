@@ -75,31 +75,22 @@ const AuthProvider = ({ children }) => {
 
   const checkExistingSession = async () => {
     try {
-      console.log('Checking existing session...');
       const response = await axios.get(`${API}/check-session`);
-      console.log('Session check response:', response.data);
       
       if (response.data.authenticated) {
-        console.log('User authenticated via session:', response.data.user);
         setUser(response.data.user);
       } else {
-        console.log('No session found, trying JWT token...');
         // Fallback to JWT token
         const token = localStorage.getItem('token');
         if (token) {
-          console.log('JWT token found, fetching user...');
           axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
           await fetchCurrentUser();
-        } else {
-          console.log('No JWT token found');
         }
       }
     } catch (error) {
-      console.error('Error checking session:', error);
       // Try JWT fallback
       const token = localStorage.getItem('token');
       if (token) {
-        console.log('Fallback to JWT token after error...');
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         await fetchCurrentUser();
       }
