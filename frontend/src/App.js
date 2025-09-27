@@ -239,10 +239,26 @@ const Navigation = () => {
         <div className="flex space-x-4">
           <Link to="/dashboard" className="hover:text-gray-300">Dashboard</Link>
           <Link to="/perfil" className="hover:text-gray-300">Mi Perfil</Link>
+          
+          {user.rol === 'SUPER_ADMIN' && (
+            <>
+              <Link to="/superadmin/lavaderos" className="hover:text-gray-300">Gestión de Lavaderos</Link>
+              <Link to="/superadmin/comprobantes" className="hover:text-gray-300">Comprobantes</Link>
+            </>
+          )}
+          
           {user.rol === 'ADMIN' && (
             <>
-              <Link to="/usuarios" className="hover:text-gray-300">Gestión de Usuarios</Link>
-              <Link to="/admin" className="hover:text-gray-300">Panel Admin</Link>
+              <Link to="/admin/configuracion" className="hover:text-gray-300">Configuración</Link>
+              <Link to="/admin/turnos" className="hover:text-gray-300">Gestión de Turnos</Link>
+              <Link to="/admin/comprobantes" className="hover:text-gray-300">Comprobantes</Link>
+            </>
+          )}
+          
+          {user.rol === 'CLIENTE' && (
+            <>
+              <Link to="/cliente/turnos" className="hover:text-gray-300">Mis Turnos</Link>
+              <Link to="/cliente/reservar" className="hover:text-gray-300">Reservar Turno</Link>
             </>
           )}
         </div>
