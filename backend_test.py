@@ -4,7 +4,7 @@ import json
 from datetime import datetime
 
 class AuthenticationAPITester:
-    def __init__(self, base_url="https://espanol-assist.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://laundry-mgmt-1.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.admin_token = None
         self.employee_token = None
