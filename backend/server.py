@@ -1387,9 +1387,9 @@ async def crear_admin_superadmin(admin_data: AdminLavaderoRegister, request: Req
         "estado": "PENDIENTE_APROBACION - Usar 'Activar Lavadero' para activar sin pago"
     }
 
-# Activar lavadero directamente (Super Admin - para testing)
-@api_router.post("/superadmin/activar-lavadero/{admin_id}")
-async def activar_lavadero_directo(admin_id: str, request: Request):
+# Toggle estado de lavadero (Activar/Desactivar) - Super Admin para testing
+@api_router.post("/superadmin/toggle-lavadero/{admin_id}")
+async def toggle_lavadero_estado(admin_id: str, request: Request):
     await get_super_admin_user(request)
     
     # Buscar admin
@@ -1408,36 +1408,68 @@ async def activar_lavadero_directo(admin_id: str, request: Request):
             detail="Lavadero no encontrado para este admin"
         )
     
-    # Activar lavadero por 30 días
-    fecha_vencimiento = datetime.now(timezone.utc) + timedelta(days=30)
-    await db.lavaderos.update_one(
-        {"admin_id": admin_id},
-        {
+    # Determinar nuevo estado
+    estado_actual = lavadero_doc.get("estado_operativo", EstadoAdmin.PENDIENTE_APROBACION)
+    
+    if estado_actual == EstadoAdmin.ACTIVO:
+        # Desactivar: cambiar a PENDIENTE_APROBACION
+        nuevo_estado = EstadoAdmin.PENDIENTE_APROBACION
+        update_data = {
             "$set": {
-                "estado_operativo": EstadoAdmin.ACTIVO,
+                "estado_operativo": nuevo_estado
+            },
+            "$unset": {
+                "fecha_vencimiento": ""
+            }
+        }
+        message = "Lavadero desactivado - cambiado a estado pendiente"
+        
+    else:
+        # Activar: cambiar a ACTIVO
+        nuevo_estado = EstadoAdmin.ACTIVO
+        fecha_vencimiento = datetime.now(timezone.utc) + timedelta(days=30)
+        update_data = {
+            "$set": {
+                "estado_operativo": nuevo_estado,
                 "fecha_vencimiento": fecha_vencimiento
             }
         }
-    )
+        message = "Lavadero activado exitosamente (sin proceso de pago)"
+        
+        # Crear pago mensualidad como confirmado (simulado) solo al activar
+        config_super = await db.configuracion_superadmin.find_one({})
+        if config_super:
+            # Verificar si ya existe un pago para este mes
+            mes_actual = datetime.now().strftime("%Y-%m")
+            pago_existente = await db.pagos_mensualidad.find_one({
+                "admin_id": admin_id,
+                "mes_año": mes_actual
+            })
+            
+            if not pago_existente:
+                pago_mensualidad = PagoMensualidad(
+                    admin_id=admin_id,
+                    lavadero_id=lavadero_doc["id"],
+                    monto=config_super.get("precio_mensualidad", 10000.0),
+                    mes_año=mes_actual,
+                    estado=EstadoPago.CONFIRMADO,
+                    fecha_vencimiento=fecha_vencimiento
+                )
+                await db.pagos_mensualidad.insert_one(pago_mensualidad.dict())
     
-    # Crear pago mensualidad como confirmado (simulado)
-    config_super = await db.configuracion_superadmin.find_one({})
-    if config_super:
-        pago_mensualidad = PagoMensualidad(
-            admin_id=admin_id,
-            lavadero_id=lavadero_doc["id"],
-            monto=config_super.get("precio_mensualidad", 10000.0),
-            mes_año=datetime.now().strftime("%Y-%m"),
-            estado=EstadoPago.CONFIRMADO,
-            fecha_vencimiento=fecha_vencimiento
-        )
-        await db.pagos_mensualidad.insert_one(pago_mensualidad.dict())
+    # Actualizar lavadero
+    await db.lavaderos.update_one({"admin_id": admin_id}, update_data)
     
-    return {
-        "message": "Lavadero activado exitosamente (sin proceso de pago)",
-        "estado": "ACTIVO",
-        "vence": fecha_vencimiento.isoformat()
+    response_data = {
+        "message": message,
+        "estado_anterior": estado_actual,
+        "estado_nuevo": nuevo_estado
     }
+    
+    if nuevo_estado == EstadoAdmin.ACTIVO:
+        response_data["vence"] = fecha_vencimiento.isoformat()
+    
+    return response_data
 
 # Obtener credenciales para testing (Super Admin)
 @api_router.get("/superadmin/credenciales-testing")
