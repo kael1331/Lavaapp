@@ -1010,13 +1010,31 @@ async def get_comprobantes_pendientes(request: Request):
 
 # Subir comprobante de pago mensualidad (Admin)
 @api_router.post("/comprobante-mensualidad")
-async def upload_comprobante_mensualidad(request: Request, comprobante_data: ComprobantePagoMensualidadCreate):
+async def upload_comprobante_mensualidad(
+    request: Request, 
+    imagen: UploadFile = File(...)
+):
     current_user = await get_current_user(request)
     
     if current_user.rol != UserRole.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Solo los administradores pueden subir comprobantes"
+        )
+    
+    # Validar tipo de archivo
+    allowed_types = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"]
+    if imagen.content_type not in allowed_types:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Solo se permiten archivos de imagen (JPEG, PNG, GIF, WEBP)"
+        )
+    
+    # Validar tamaño (máximo 5MB)
+    if imagen.size and imagen.size > 5 * 1024 * 1024:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El archivo no puede ser mayor a 5MB"
         )
     
     # Buscar pago mensualidad pendiente del admin
@@ -1043,21 +1061,45 @@ async def upload_comprobante_mensualidad(request: Request, comprobante_data: Com
             detail="Ya existe un comprobante para este pago"
         )
     
-    # Crear comprobante
-    nuevo_comprobante = ComprobantePagoMensualidad(
-        pago_mensualidad_id=pago_pendiente["id"],
-        admin_id=current_user.id,
-        imagen_url=comprobante_data.imagen_url
-    )
+    # Generar nombre único para el archivo
+    file_extension = imagen.filename.split('.')[-1] if '.' in imagen.filename else 'jpg'
+    unique_filename = f"comprobante_{current_user.id}_{uuid.uuid4()}.{file_extension}"
+    file_path = COMPROBANTES_DIR / unique_filename
     
-    comprobante_dict = nuevo_comprobante.dict()
-    await db.comprobantes_pago_mensualidad.insert_one(comprobante_dict)
-    
-    return {
-        "message": "Comprobante subido exitosamente",
-        "comprobante_id": nuevo_comprobante.id,
-        "estado": "Pendiente de revisión por Super Admin"
-    }
+    try:
+        # Guardar archivo
+        with open(file_path, "wb") as buffer:
+            content = await imagen.read()
+            buffer.write(content)
+        
+        # Crear URL para acceder al archivo
+        imagen_url = f"/uploads/comprobantes/{unique_filename}"
+        
+        # Crear comprobante
+        nuevo_comprobante = ComprobantePagoMensualidad(
+            pago_mensualidad_id=pago_pendiente["id"],
+            admin_id=current_user.id,
+            imagen_url=imagen_url
+        )
+        
+        comprobante_dict = nuevo_comprobante.dict()
+        await db.comprobantes_pago_mensualidad.insert_one(comprobante_dict)
+        
+        return {
+            "message": "Comprobante subido exitosamente",
+            "comprobante_id": nuevo_comprobante.id,
+            "imagen_url": imagen_url,
+            "estado": "Pendiente de revisión por Super Admin"
+        }
+        
+    except Exception as e:
+        # Si hay error, eliminar archivo si se creó
+        if file_path.exists():
+            file_path.unlink()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al guardar archivo: {str(e)}"
+        )
 
 # Obtener comprobantes del admin (Admin)
 @api_router.get("/admin/mis-comprobantes")
