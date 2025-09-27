@@ -64,7 +64,7 @@ async def check_payments():
     else:
         print("   ❌ No Super Admin configuration found")
     
-    await client.close()
+    client.close()
 
 if __name__ == "__main__":
     asyncio.run(check_payments())
