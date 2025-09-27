@@ -109,6 +109,162 @@ class UserStats(BaseModel):
     completed_tasks: int
     pending_tasks: int
 
+# ========== MODELOS DEL SISTEMA DE LAVADEROS ==========
+
+class EstadoAdmin(str):
+    PENDIENTE_APROBACION = "PENDIENTE_APROBACION"
+    ACTIVO = "ACTIVO"
+    VENCIDO = "VENCIDO"
+    BLOQUEADO = "BLOQUEADO"
+
+class EstadoTurno(str):
+    DISPONIBLE = "DISPONIBLE"
+    RESERVADO = "RESERVADO"
+    CONFIRMADO = "CONFIRMADO"
+    CANCELADO = "CANCELADO"
+
+class EstadoPago(str):
+    PENDIENTE = "PENDIENTE"
+    CONFIRMADO = "CONFIRMADO"
+    RECHAZADO = "RECHAZADO"
+
+# Configuración Super Admin
+class ConfiguracionSuperAdmin(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    alias_bancario: str
+    precio_mensualidad: float
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+# Lavadero
+class Lavadero(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    nombre: str
+    direccion: str
+    descripcion: Optional[str] = None
+    admin_id: str  # ID del usuario admin
+    estado_operativo: str = EstadoAdmin.PENDIENTE_APROBACION
+    fecha_vencimiento: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    is_active: bool = True
+
+class LavaderoCreate(BaseModel):
+    nombre: str
+    direccion: str
+    descripcion: Optional[str] = None
+
+class LavaderoResponse(BaseModel):
+    id: str
+    nombre: str
+    direccion: str
+    descripcion: Optional[str] = None
+    estado_operativo: str
+    fecha_vencimiento: Optional[datetime] = None
+    created_at: datetime
+
+# Configuración de Lavadero
+class ConfiguracionLavadero(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    lavadero_id: str
+    hora_apertura: str  # "08:00"
+    hora_cierre: str    # "18:00"
+    duracion_turno_minutos: int  # 30
+    dias_laborales: List[int]  # [1,2,3,4,5] (1=Lunes, 7=Domingo)
+    alias_bancario: str
+    precio_turno: float
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ConfiguracionLavaderoCreate(BaseModel):
+    hora_apertura: str
+    hora_cierre: str
+    duracion_turno_minutos: int
+    dias_laborales: List[int]
+    alias_bancario: str
+    precio_turno: float
+
+# Día No laboral
+class DiaNoLaboral(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    lavadero_id: str
+    fecha: datetime  # Solo la fecha, no la hora
+    motivo: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class DiaNoLaboralCreate(BaseModel):
+    fecha: datetime
+    motivo: Optional[str] = None
+
+# Turno
+class Turno(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    lavadero_id: str
+    cliente_id: Optional[str] = None  # None si está disponible
+    fecha_hora: datetime
+    estado: str = EstadoTurno.DISPONIBLE
+    precio: float
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class TurnoCreate(BaseModel):
+    fecha_hora: datetime
+
+class TurnoResponse(BaseModel):
+    id: str
+    lavadero_id: str
+    cliente_id: Optional[str] = None
+    fecha_hora: datetime
+    estado: str
+    precio: float
+    created_at: datetime
+
+# Comprobante de Pago (Turnos)
+class ComprobantePago(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    turno_id: str
+    cliente_id: str
+    imagen_url: str  # URL o path de la imagen
+    estado: str = EstadoPago.PENDIENTE
+    comentario_admin: Optional[str] = None
+    fecha_revision: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ComprobantePagoCreate(BaseModel):
+    turno_id: str
+    imagen_url: str
+
+# Pago Mensualidad (Admins al Super Admin)
+class PagoMensualidad(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    admin_id: str
+    lavadero_id: str
+    monto: float
+    mes_año: str  # "2024-01"
+    estado: str = EstadoPago.PENDIENTE
+    fecha_vencimiento: datetime
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+# Comprobante Pago Mensualidad
+class ComprobantePagoMensualidad(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    pago_mensualidad_id: str
+    admin_id: str
+    imagen_url: str
+    estado: str = EstadoPago.PENDIENTE
+    comentario_superadmin: Optional[str] = None
+    fecha_revision: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ComprobantePagoMensualidadCreate(BaseModel):
+    pago_mensualidad_id: str
+    imagen_url: str
+
+# Registro de Admin con Lavadero
+class AdminLavaderoRegister(BaseModel):
+    # Datos del admin
+    email: EmailStr
+    password: str
+    nombre: str
+    # Datos del lavadero
+    lavadero: LavaderoCreate
+
 # Utility functions
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
