@@ -1846,27 +1846,7 @@ async def get_credenciales_testing(request: Request):
     
     return result
 
-# Health check
-@api_router.get("/health")
-async def health_check():
-    return {"status": "ok", "message": "Sistema de gestión de lavaderos funcionando"}
-
-# Include router
-app.include_router(api_router)
-
-# CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Mount static files DESPUÉS de CORS
-app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
-
-# Endpoint específico para servir imágenes de comprobantes (alternativa si los archivos estáticos fallan)
+# Endpoint específico para servir imágenes de comprobantes
 @api_router.get("/uploads/comprobantes/{filename}")
 async def get_comprobante_image(filename: str):
     file_path = COMPROBANTES_DIR / filename
@@ -1888,6 +1868,26 @@ async def get_comprobante_image(filename: str):
         content = file.read()
     
     return Response(content, media_type=content_type)
+
+# Health check
+@api_router.get("/health")
+async def health_check():
+    return {"status": "ok", "message": "Sistema de gestión de lavaderos funcionando"}
+
+# Include router
+app.include_router(api_router)
+
+# CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_credentials=True,
+    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Mount static files DESPUÉS de CORS
+app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 
 # Configure logging
 logging.basicConfig(
