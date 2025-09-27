@@ -2036,6 +2036,50 @@ const GestionAdmins = () => {
     }));
   };
 
+  const handleActivarLavadero = async (adminId) => {
+    if (window.confirm('¿Activar este lavadero sin proceso de pago? (Solo para testing)')) {
+      try {
+        await axios.post(`${API}/superadmin/activar-lavadero/${adminId}`);
+        await fetchAdmins();
+        alert('Lavadero activado exitosamente');
+      } catch (error) {
+        alert(error.response?.data?.detail || 'Error al activar lavadero');
+      }
+    }
+  };
+
+  const handleCreateAdmin = async (e) => {
+    e.preventDefault();
+    try {
+      const requestData = {
+        email: createForm.email,
+        password: createForm.password,
+        nombre: createForm.nombre,
+        lavadero: {
+          nombre: createForm.lavadero_nombre,
+          direccion: createForm.lavadero_direccion,
+          descripcion: createForm.lavadero_descripcion
+        }
+      };
+
+      await axios.post(`${API}/superadmin/crear-admin`, requestData);
+      
+      setShowCreateForm(false);
+      setCreateForm({
+        email: '',
+        password: '',
+        nombre: '',
+        lavadero_nombre: '',
+        lavadero_direccion: '',
+        lavadero_descripcion: ''
+      });
+      await fetchAdmins();
+      alert('Admin y lavadero creados exitosamente');
+    } catch (error) {
+      alert(error.response?.data?.detail || 'Error al crear admin');
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-8">
