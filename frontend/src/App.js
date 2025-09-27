@@ -1175,11 +1175,23 @@ const LavaderoLogin = () => {
           </p>
         </div>
 
-        {/* Aquí irá el formulario de login específico del lavadero */}
-        <div className="bg-blue-50 p-4 rounded-md">
-          <p className="text-sm text-blue-800">
-            🚧 Funcionalidad en desarrollo: Login específico por lavadero
-          </p>
+        {/* Formulario de login específico del lavadero */}
+        <div className="space-y-4">
+          <Link
+            to="/login"
+            onClick={() => sessionStorage.setItem('from_lavadero_selection', 'true')}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors text-center block"
+          >
+            Iniciar Sesión como Cliente
+          </Link>
+          
+          <Link
+            to="/register"
+            onClick={() => sessionStorage.setItem('from_lavadero_selection', 'true')}
+            className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md transition-colors text-center block"
+          >
+            Registrarse como Cliente
+          </Link>
         </div>
       </div>
     </div>
