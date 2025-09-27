@@ -240,6 +240,61 @@ class AuthenticationAPITester:
             200
         )
 
+    def test_super_admin_login(self):
+        """Test Super Admin login"""
+        return self.test_login("kearcangel@gmail.com", "K@#l1331", "Super Admin")
+
+    def test_get_all_admins(self, token):
+        """Test getting all admins (Super Admin only)"""
+        return self.run_test(
+            "Get All Admins (Super Admin)",
+            "GET",
+            "superadmin/admins",
+            200,
+            token=token
+        )
+
+    def test_toggle_lavadero(self, token, admin_id):
+        """Test toggle lavadero endpoint (Super Admin only)"""
+        return self.run_test(
+            f"Toggle Lavadero Estado (Admin ID: {admin_id})",
+            "POST",
+            f"superadmin/toggle-lavadero/{admin_id}",
+            200,
+            token=token
+        )
+
+    def test_credenciales_testing(self, token):
+        """Test credenciales testing endpoint (Super Admin only)"""
+        return self.run_test(
+            "Get Credenciales Testing (Super Admin)",
+            "GET",
+            "superadmin/credenciales-testing",
+            200,
+            token=token
+        )
+
+    def test_create_admin_for_testing(self, token):
+        """Create a test admin for toggle testing"""
+        test_timestamp = datetime.now().strftime('%H%M%S')
+        return self.run_test(
+            "Create Admin for Testing (Super Admin)",
+            "POST",
+            "superadmin/crear-admin",
+            200,
+            data={
+                "email": f"test_admin_toggle_{test_timestamp}@test.com",
+                "password": "testpass123",
+                "nombre": f"Test Admin Toggle {test_timestamp}",
+                "lavadero": {
+                    "nombre": f"Lavadero Test Toggle {test_timestamp}",
+                    "direccion": "Calle Test 123",
+                    "descripcion": "Lavadero para testing toggle"
+                }
+            },
+            token=token
+        )
+
 def main():
     print("🚀 Starting Authentication API Tests")
     print("=" * 50)
