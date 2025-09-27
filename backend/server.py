@@ -734,7 +734,7 @@ async def get_session_data(request: Request):
                 nombre=session_data["name"],
                 google_id=session_data["id"],
                 picture=session_data.get("picture"),
-                rol=UserRole.EMPLEADO  # Default role for Google users
+                rol=UserRole.CLIENTE  # Default role for Google users
             )
             
             new_user = User(
