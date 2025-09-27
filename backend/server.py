@@ -795,10 +795,130 @@ async def check_session(request: Request):
 async def root():
     return {"message": "Hello World", "status": "API funcionando"}
 
+# ========== ENDPOINTS PÚBLICOS ==========
+
+# Obtener lavaderos operativos (para la página inicial)
+@api_router.get("/lavaderos-operativos")
+async def get_lavaderos_operativos():
+    lavaderos_cursor = db.lavaderos.find({
+        "estado_operativo": EstadoAdmin.ACTIVO,
+        "is_active": True
+    })
+    lavaderos = await lavaderos_cursor.to_list(1000)
+    return [LavaderoResponse(**lavadero) for lavadero in lavaderos]
+
+# Obtener configuración de Super Admin (alias bancario)
+@api_router.get("/superadmin-config")
+async def get_superadmin_config():
+    config = await db.configuracion_superadmin.find_one({})
+    if not config:
+        # Crear configuración por defecto
+        default_config = ConfiguracionSuperAdmin(
+            alias_bancario="superadmin.alias.mp",
+            precio_mensualidad=10000.0
+        )
+        await db.configuracion_superadmin.insert_one(default_config.dict())
+        config = default_config.dict()
+    
+    return {
+        "alias_bancario": config.get("alias_bancario"),
+        "precio_mensualidad": config.get("precio_mensualidad")
+    }
+
+# ========== ENDPOINTS SUPER ADMIN ==========
+
+# Ver todos los lavaderos (Super Admin)
+@api_router.get("/superadmin/lavaderos")
+async def get_all_lavaderos(request: Request):
+    await get_super_admin_user(request)
+    
+    # Join con usuarios para obtener datos del admin
+    pipeline = [
+        {
+            "$lookup": {
+                "from": "users",
+                "localField": "admin_id",
+                "foreignField": "id",
+                "as": "admin"
+            }
+        },
+        {"$unwind": "$admin"}
+    ]
+    
+    lavaderos = await db.lavaderos.aggregate(pipeline).to_list(1000)
+    
+    result = []
+    for lavadero in lavaderos:
+        result.append({
+            "id": lavadero["id"],
+            "nombre": lavadero["nombre"],
+            "direccion": lavadero["direccion"],
+            "admin_nombre": lavadero["admin"]["nombre"],
+            "admin_email": lavadero["admin"]["email"],
+            "estado_operativo": lavadero["estado_operativo"],
+            "fecha_vencimiento": lavadero.get("fecha_vencimiento"),
+            "created_at": lavadero["created_at"]
+        })
+    
+    return result
+
+# Obtener comprobantes pendientes (Super Admin)
+@api_router.get("/superadmin/comprobantes-pendientes")
+async def get_comprobantes_pendientes(request: Request):
+    await get_super_admin_user(request)
+    
+    # Join para obtener información del admin y lavadero
+    pipeline = [
+        {"$match": {"estado": EstadoPago.PENDIENTE}},
+        {
+            "$lookup": {
+                "from": "pagos_mensualidad",
+                "localField": "pago_mensualidad_id",
+                "foreignField": "id",
+                "as": "pago"
+            }
+        },
+        {"$unwind": "$pago"},
+        {
+            "$lookup": {
+                "from": "users",
+                "localField": "admin_id",
+                "foreignField": "id",
+                "as": "admin"
+            }
+        },
+        {"$unwind": "$admin"},
+        {
+            "$lookup": {
+                "from": "lavaderos",
+                "localField": "pago.lavadero_id",
+                "foreignField": "id",
+                "as": "lavadero"
+            }
+        },
+        {"$unwind": "$lavadero"}
+    ]
+    
+    comprobantes = await db.comprobantes_pago_mensualidad.aggregate(pipeline).to_list(1000)
+    
+    result = []
+    for comp in comprobantes:
+        result.append({
+            "comprobante_id": comp["id"],
+            "admin_nombre": comp["admin"]["nombre"],
+            "admin_email": comp["admin"]["email"],
+            "lavadero_nombre": comp["lavadero"]["nombre"],
+            "monto": comp["pago"]["monto"],
+            "imagen_url": comp["imagen_url"],
+            "created_at": comp["created_at"]
+        })
+    
+    return result
+
 # Health check
 @api_router.get("/health")
 async def health_check():
-    return {"status": "ok", "message": "Sistema de autenticación funcionando"}
+    return {"status": "ok", "message": "Sistema de gestión de lavaderos funcionando"}
 
 # Include router
 app.include_router(api_router)
