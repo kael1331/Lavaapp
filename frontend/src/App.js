@@ -147,11 +147,18 @@ const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
+    const currentUser = user;
+    
     try {
       // Call logout endpoint to clear session
       await axios.post(`${API}/logout`);
     } catch (error) {
       console.error('Error during logout:', error);
+    }
+    
+    // Set client logout flag if user is client
+    if (currentUser?.rol === 'CLIENTE') {
+      sessionStorage.setItem('client_logout', 'true');
     }
     
     // Clear local storage and axios headers
