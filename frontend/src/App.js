@@ -2036,14 +2036,21 @@ const GestionAdmins = () => {
     }));
   };
 
-  const handleActivarLavadero = async (adminId) => {
-    if (window.confirm('¿Activar este lavadero sin proceso de pago? (Solo para testing)')) {
+  const handleToggleLavadero = async (admin) => {
+    const estadoActual = admin.lavadero.estado_operativo;
+    const esActivo = estadoActual === 'ACTIVO';
+    const accion = esActivo ? 'desactivar' : 'activar';
+    const mensaje = esActivo 
+      ? '¿Desactivar este lavadero? (Cambiará a estado pendiente)' 
+      : '¿Activar este lavadero sin proceso de pago? (Solo para testing)';
+    
+    if (window.confirm(mensaje)) {
       try {
-        await axios.post(`${API}/superadmin/activar-lavadero/${adminId}`);
+        const response = await axios.post(`${API}/superadmin/toggle-lavadero/${admin.admin_id}`);
         await fetchAdmins();
-        alert('Lavadero activado exitosamente');
+        alert(response.data.message);
       } catch (error) {
-        alert(error.response?.data?.detail || 'Error al activar lavadero');
+        alert(error.response?.data?.detail || `Error al ${accion} lavadero`);
       }
     }
   };
