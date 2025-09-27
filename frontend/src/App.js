@@ -2833,6 +2833,12 @@ function App() {
               </ProtectedRoute>
             } />
             
+            <Route path="/admin/configuracion" element={
+              <ProtectedRoute requiredRole="ADMIN">
+                <ConfiguracionLavadero />
+              </ProtectedRoute>
+            } />
+            
             <Route path="/superadmin-dashboard" element={
               <ProtectedRoute requiredRole="SUPER_ADMIN">
                 <SuperAdminDashboard />
