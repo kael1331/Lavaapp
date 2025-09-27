@@ -295,6 +295,120 @@ class AuthenticationAPITester:
             token=token
         )
 
+    # ========== NEW CONFIGURATION ENDPOINTS TESTS ==========
+    
+    def test_admin_login_carlos(self):
+        """Test login as regular admin carlos"""
+        return self.test_login("carlos@lavaderosur.com", "carlos123", "Admin Carlos")
+    
+    def test_get_configuracion_lavadero(self, token):
+        """Test GET /admin/configuracion endpoint"""
+        return self.run_test(
+            "Get Configuración Lavadero (Admin)",
+            "GET",
+            "admin/configuracion",
+            200,
+            token=token
+        )
+    
+    def test_update_configuracion_lavadero(self, token):
+        """Test PUT /admin/configuracion endpoint"""
+        config_data = {
+            "hora_apertura": "09:00",
+            "hora_cierre": "17:00",
+            "duracion_turno_minutos": 90,
+            "dias_laborales": [1, 2, 3, 4, 5, 6],
+            "alias_bancario": "carlos.lavadero.mp",
+            "precio_turno": 7500.0
+        }
+        return self.run_test(
+            "Update Configuración Lavadero (Admin)",
+            "PUT",
+            "admin/configuracion",
+            200,
+            data=config_data,
+            token=token
+        )
+    
+    def test_get_dias_no_laborales(self, token):
+        """Test GET /admin/dias-no-laborales endpoint"""
+        return self.run_test(
+            "Get Días No Laborales (Admin)",
+            "GET",
+            "admin/dias-no-laborales",
+            200,
+            token=token
+        )
+    
+    def test_add_dia_no_laboral(self, token):
+        """Test POST /admin/dias-no-laborales endpoint"""
+        from datetime import datetime, timedelta, timezone
+        tomorrow = datetime.now(timezone.utc) + timedelta(days=1)
+        dia_data = {
+            "fecha": tomorrow.isoformat(),
+            "motivo": "Día de mantenimiento de equipos"
+        }
+        return self.run_test(
+            "Add Día No Laboral (Admin)",
+            "POST",
+            "admin/dias-no-laborales",
+            200,
+            data=dia_data,
+            token=token
+        )
+    
+    def test_delete_dia_no_laboral(self, token, dia_id):
+        """Test DELETE /admin/dias-no-laborales/{dia_id} endpoint"""
+        return self.run_test(
+            f"Delete Día No Laboral (Admin) - ID: {dia_id}",
+            "DELETE",
+            f"admin/dias-no-laborales/{dia_id}",
+            200,
+            token=token
+        )
+    
+    def test_super_admin_cannot_access_admin_endpoints(self, super_admin_token):
+        """Test that super admin CANNOT access /admin/ endpoints"""
+        print("\n🚫 Testing Super Admin CANNOT access /admin/ endpoints...")
+        
+        # Test GET configuracion - should fail
+        success1, _ = self.run_test(
+            "Super Admin tries GET /admin/configuracion (should fail)",
+            "GET",
+            "admin/configuracion",
+            403,  # Should be forbidden
+            token=super_admin_token
+        )
+        
+        # Test PUT configuracion - should fail
+        config_data = {
+            "hora_apertura": "09:00",
+            "hora_cierre": "17:00",
+            "duracion_turno_minutos": 90,
+            "dias_laborales": [1, 2, 3, 4, 5, 6],
+            "alias_bancario": "test.alias.mp",
+            "precio_turno": 7500.0
+        }
+        success2, _ = self.run_test(
+            "Super Admin tries PUT /admin/configuracion (should fail)",
+            "PUT",
+            "admin/configuracion",
+            403,  # Should be forbidden
+            data=config_data,
+            token=super_admin_token
+        )
+        
+        # Test GET dias no laborales - should fail
+        success3, _ = self.run_test(
+            "Super Admin tries GET /admin/dias-no-laborales (should fail)",
+            "GET",
+            "admin/dias-no-laborales",
+            403,  # Should be forbidden
+            token=super_admin_token
+        )
+        
+        return success1 and success2 and success3
+
 def main():
     print("🚀 Starting Authentication API Tests")
     print("=" * 50)
