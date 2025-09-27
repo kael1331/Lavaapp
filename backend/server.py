@@ -585,12 +585,18 @@ async def login(login_data: LoginRequest):
         if lavadero_doc:
             lavadero = Lavadero(**lavadero_doc)
             # Verificar si está vencido
-            if lavadero.fecha_vencimiento and lavadero.fecha_vencimiento < datetime.now(timezone.utc):
-                lavadero.estado_operativo = EstadoAdmin.VENCIDO
-                await db.lavaderos.update_one(
-                    {"id": lavadero.id},
-                    {"$set": {"estado_operativo": EstadoAdmin.VENCIDO}}
-                )
+            if lavadero.fecha_vencimiento:
+                # Asegurar que ambas fechas tengan timezone para comparar
+                fecha_vencimiento = lavadero.fecha_vencimiento
+                if fecha_vencimiento.tzinfo is None:
+                    fecha_vencimiento = fecha_vencimiento.replace(tzinfo=timezone.utc)
+                    
+                if fecha_vencimiento < datetime.now(timezone.utc):
+                    lavadero.estado_operativo = EstadoAdmin.VENCIDO
+                    await db.lavaderos.update_one(
+                        {"id": lavadero.id},
+                        {"$set": {"estado_operativo": EstadoAdmin.VENCIDO}}
+                    )
     
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
