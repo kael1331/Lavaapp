@@ -834,6 +834,176 @@ class AuthenticationAPITester:
         
         return results
     
+    # ========== SPECIFIC TASK: TEST IMAGE SERVING FOR COMPROBANTES ==========
+    
+    def test_image_serving_for_comprobantes(self, super_admin_token):
+        """
+        SPECIFIC TASK: Test image serving functionality for comprobantes in Super Admin dashboard
+        
+        Requirements from review request:
+        1. Test GET `/api/uploads/comprobantes/{filename}` endpoint
+        2. Test GET `/superadmin/comprobantes-pendientes` endpoint  
+        3. Verify image URLs are constructed correctly
+        4. Test with actual files available on server
+        """
+        print("\n🎯 TESTING IMAGE SERVING FOR COMPROBANTES IN SUPER ADMIN DASHBOARD...")
+        print("=" * 70)
+        
+        results = {
+            'super_admin_login': False,
+            'image_endpoint_works': False,
+            'comprobantes_pendientes_works': False,
+            'image_urls_correct': False,
+            'actual_files_accessible': False,
+            'content_type_correct': False
+        }
+        
+        # Step 1: Verify Super Admin login
+        print("\n1️⃣ Verifying Super Admin login...")
+        results['super_admin_login'] = True  # Already logged in
+        print("✅ Super Admin already authenticated")
+        
+        # Step 2: Test specific image serving endpoint with known files
+        print("\n2️⃣ Testing image serving endpoint with actual files...")
+        
+        # Test with the files mentioned in the review request
+        test_files = [
+            "comprobante_6befb2b5-5fce-49c6-94cc-07a466934484_995cf9f6-2fb7-4b8d-bc1c-38419da2faee.jpg",
+            "comprobante_6befb2b5-5fce-49c6-94cc-07a466934484_2899fc71-1c9f-467e-8adb-8e06522263dd.jpg"
+        ]
+        
+        files_accessible = 0
+        for filename in test_files:
+            print(f"\n   Testing file: {filename}")
+            
+            success, response_data = self.run_test(
+                f"Get Comprobante Image - {filename[:50]}...",
+                "GET",
+                f"uploads/comprobantes/{filename}",
+                200,
+                expect_json=False
+            )
+            
+            if success:
+                files_accessible += 1
+                print(f"✅ File accessible - Size: {len(response_data) if isinstance(response_data, (str, bytes)) else 'Unknown'} bytes")
+                
+                # Test content type by making a direct request to check headers
+                url = f"{self.base_url}/uploads/comprobantes/{filename}"
+                try:
+                    response = requests.get(url)
+                    if response.status_code == 200:
+                        content_type = response.headers.get('content-type', '')
+                        print(f"   Content-Type: {content_type}")
+                        if 'image/' in content_type:
+                            results['content_type_correct'] = True
+                            print("✅ Correct image content-type header")
+                        else:
+                            print(f"⚠️  Unexpected content-type: {content_type}")
+                except Exception as e:
+                    print(f"   Error checking headers: {str(e)}")
+            else:
+                print(f"❌ File not accessible")
+        
+        if files_accessible > 0:
+            results['image_endpoint_works'] = True
+            results['actual_files_accessible'] = True
+            print(f"✅ Image serving endpoint working - {files_accessible}/{len(test_files)} files accessible")
+        else:
+            print("❌ Image serving endpoint not working - no files accessible")
+        
+        # Step 3: Test comprobantes pendientes endpoint
+        print("\n3️⃣ Testing comprobantes pendientes endpoint...")
+        
+        success, comprobantes_data = self.run_test(
+            "Get Comprobantes Pendientes (Super Admin)",
+            "GET",
+            "superadmin/comprobantes-pendientes",
+            200,
+            token=super_admin_token
+        )
+        
+        if success and isinstance(comprobantes_data, list):
+            results['comprobantes_pendientes_works'] = True
+            print(f"✅ Comprobantes pendientes endpoint working - Found {len(comprobantes_data)} comprobantes")
+            
+            # Step 4: Verify image URLs are constructed correctly
+            print("\n4️⃣ Verifying image URL construction...")
+            
+            urls_correct = 0
+            for i, comprobante in enumerate(comprobantes_data[:3]):  # Check first 3
+                imagen_url = comprobante.get('imagen_url', '')
+                print(f"\n   Comprobante {i+1}:")
+                print(f"   Admin: {comprobante.get('admin_nombre')} ({comprobante.get('admin_email')})")
+                print(f"   Lavadero: {comprobante.get('lavadero_nombre')}")
+                print(f"   Monto: ${comprobante.get('monto')}")
+                print(f"   Imagen URL: {imagen_url}")
+                
+                # Check if URL format is correct
+                if imagen_url.startswith('/uploads/comprobantes/'):
+                    urls_correct += 1
+                    print("✅ URL format correct")
+                    
+                    # Test if the full URL would work
+                    full_url = f"https://laundry-mgmt-1.preview.emergentagent.com/api{imagen_url}"
+                    print(f"   Full URL would be: {full_url}")
+                    
+                    # Extract filename and test direct access
+                    filename = imagen_url.split('/')[-1]
+                    if filename:
+                        print(f"   Testing direct access to: {filename}")
+                        direct_success, _ = self.run_test(
+                            f"Direct Image Access - {filename[:30]}...",
+                            "GET",
+                            f"uploads/comprobantes/{filename}",
+                            200,
+                            expect_json=False
+                        )
+                        if direct_success:
+                            print("✅ Direct image access works")
+                        else:
+                            print("❌ Direct image access failed")
+                else:
+                    print(f"❌ URL format incorrect - Expected to start with '/uploads/comprobantes/', got: {imagen_url}")
+            
+            if urls_correct > 0:
+                results['image_urls_correct'] = True
+                print(f"✅ Image URLs correctly formatted - {urls_correct}/{len(comprobantes_data[:3])} correct")
+            else:
+                print("❌ Image URLs not correctly formatted")
+                
+        else:
+            print("❌ Comprobantes pendientes endpoint failed or returned invalid data")
+        
+        # Step 5: Test frontend URL construction pattern
+        print("\n5️⃣ Testing frontend URL construction pattern...")
+        print("   Frontend should use: ${API}${comprobante.imagen_url}")
+        print("   Where API = 'https://laundry-mgmt-1.preview.emergentagent.com/api'")
+        
+        if results['comprobantes_pendientes_works'] and len(comprobantes_data) > 0:
+            sample_comprobante = comprobantes_data[0]
+            imagen_url = sample_comprobante.get('imagen_url', '')
+            
+            if imagen_url:
+                # Simulate frontend URL construction
+                api_base = "https://laundry-mgmt-1.preview.emergentagent.com/api"
+                constructed_url = f"{api_base}{imagen_url}"
+                print(f"   Sample constructed URL: {constructed_url}")
+                
+                # Test the constructed URL
+                try:
+                    response = requests.get(constructed_url)
+                    if response.status_code == 200:
+                        print("✅ Frontend URL construction pattern works")
+                        print(f"   Response size: {len(response.content)} bytes")
+                        print(f"   Content-Type: {response.headers.get('content-type', 'Unknown')}")
+                    else:
+                        print(f"❌ Frontend URL construction failed - Status: {response.status_code}")
+                except Exception as e:
+                    print(f"❌ Error testing constructed URL: {str(e)}")
+        
+        return results
+    
     # ========== SPECIFIC TASK: CREATE 2 NEW ADMINS FOR TESTING ==========
     
     def test_create_two_new_admins_for_testing(self, super_admin_token):
