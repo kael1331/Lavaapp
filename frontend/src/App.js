@@ -577,6 +577,95 @@ const Register = () => {
   );
 };
 
+// Super Admin Dashboard específico
+const SuperAdminDashboard = () => {
+  const { user } = useAuth();
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
+
+  const fetchStats = async () => {
+    try {
+      const response = await axios.get(`${API}/dashboard/stats`);
+      setStats(response.data);
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return <div className="p-8">Cargando estadísticas...</div>;
+  }
+
+  return (
+    <div className="p-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900">
+          Dashboard de Super Administrador
+        </h1>
+        <p className="text-gray-600 mt-2">
+          Bienvenido, {user.nombre} - Sistema de Gestión de Lavaderos
+        </p>
+      </div>
+
+      {/* Estadísticas principales */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="bg-blue-50 p-6 rounded-lg">
+          <h3 className="text-lg font-semibold text-blue-800">Total Lavaderos</h3>
+          <p className="text-3xl font-bold text-blue-600">{stats?.total_lavaderos || 0}</p>
+        </div>
+        
+        <div className="bg-green-50 p-6 rounded-lg">
+          <h3 className="text-lg font-semibold text-green-800">Lavaderos Activos</h3>
+          <p className="text-3xl font-bold text-green-600">{stats?.lavaderos_activos || 0}</p>
+        </div>
+        
+        <div className="bg-yellow-50 p-6 rounded-lg">
+          <h3 className="text-lg font-semibold text-yellow-800">Pendientes Aprobación</h3>
+          <p className="text-3xl font-bold text-yellow-600">{stats?.lavaderos_pendientes || 0}</p>
+        </div>
+        
+        <div className="bg-red-50 p-6 rounded-lg">
+          <h3 className="text-lg font-semibold text-red-800">Comprobantes Pendientes</h3>
+          <p className="text-3xl font-bold text-red-600">{stats?.comprobantes_pendientes || 0}</p>
+        </div>
+      </div>
+
+      {/* Acciones principales */}
+      <div className="bg-white p-6 rounded-lg shadow">
+        <h2 className="text-xl font-semibold mb-4">Gestiones Disponibles</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Link 
+            to="/superadmin/admins" 
+            className="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-lg text-center transition-colors"
+          >
+            <div className="text-lg font-semibold">Gestión de Admins</div>
+            <div className="text-sm opacity-90">Ver, crear y gestionar administradores</div>
+          </Link>
+          
+          <Link 
+            to="/superadmin/comprobantes" 
+            className="bg-green-600 hover:bg-green-700 text-white p-4 rounded-lg text-center transition-colors"
+          >
+            <div className="text-lg font-semibold">Revisar Comprobantes</div>
+            <div className="text-sm opacity-90">Aprobar pagos mensuales</div>
+          </Link>
+          
+          <div className="bg-gray-600 hover:bg-gray-700 text-white p-4 rounded-lg text-center transition-colors cursor-pointer">
+            <div className="text-lg font-semibold">Configuración</div>
+            <div className="text-sm opacity-90">Precios y configuración global</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Dashboard Component
 const Dashboard = () => {
   const { user } = useAuth();
