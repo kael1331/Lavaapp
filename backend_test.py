@@ -1000,6 +1000,58 @@ def main():
     else:
         print("⚠️  Cannot test Super Admin blocking - Super Admin login failed")
     
+    # SPECIFIC TASK: Create 2 new admins for testing
+    print("\n📋 SPECIFIC TASK: CREATE 2 NEW ADMINS FOR TESTING")
+    print("🎯 Task: Create María and Juan with their lavaderos for comprehensive testing")
+    
+    if super_admin_success and super_admin_token:
+        task_results = tester.test_create_two_new_admins_for_testing(super_admin_token)
+        
+        # Summary of task results
+        print("\n📊 TASK COMPLETION SUMMARY:")
+        print("=" * 50)
+        print(f"✅ Admin 1 (María) Created: {task_results['admin1_created']}")
+        print(f"✅ Admin 2 (Juan) Created: {task_results['admin2_created']}")
+        print(f"✅ Both Lavaderos PENDIENTE: {task_results['lavaderos_pending']}")
+        print(f"✅ Passwords in Credentials: {task_results['passwords_in_credentials']}")
+        print(f"✅ Admin 1 Login Works: {task_results['admin1_login']}")
+        print(f"✅ Admin 2 Login Works: {task_results['admin2_login']}")
+        print(f"✅ Toggle Test (Optional): {task_results['toggle_test']}")
+        
+        # Calculate task success rate
+        task_checks = [
+            task_results['admin1_created'],
+            task_results['admin2_created'], 
+            task_results['lavaderos_pending'],
+            task_results['passwords_in_credentials'],
+            task_results['admin1_login'],
+            task_results['admin2_login']
+        ]
+        
+        task_success_count = sum(task_checks)
+        task_total = len(task_checks)
+        task_success_rate = (task_success_count / task_total) * 100
+        
+        print(f"\n🎯 TASK SUCCESS RATE: {task_success_count}/{task_total} ({task_success_rate:.1f}%)")
+        
+        if task_success_rate == 100:
+            print("🎉 TASK COMPLETED SUCCESSFULLY!")
+            print("   ✅ Both admins created with correct lavaderos")
+            print("   ✅ All verification checks passed")
+            print("   ✅ Ready for comprehensive testing with 3 admins total")
+        else:
+            print("⚠️  TASK PARTIALLY COMPLETED - Some checks failed")
+            failed_checks = []
+            if not task_results['admin1_created']: failed_checks.append("Admin 1 creation")
+            if not task_results['admin2_created']: failed_checks.append("Admin 2 creation") 
+            if not task_results['lavaderos_pending']: failed_checks.append("Lavaderos pending state")
+            if not task_results['passwords_in_credentials']: failed_checks.append("Passwords in credentials")
+            if not task_results['admin1_login']: failed_checks.append("Admin 1 login")
+            if not task_results['admin2_login']: failed_checks.append("Admin 2 login")
+            print(f"   ❌ Failed: {', '.join(failed_checks)}")
+    else:
+        print("❌ Cannot execute task - Super Admin login failed")
+    
     # Print final results
     print("\n" + "=" * 50)
     print(f"📊 FINAL RESULTS")
