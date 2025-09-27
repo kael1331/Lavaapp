@@ -198,7 +198,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Crear 2 nuevos administradores para testing usando endpoint Super Admin"
+    - "Verificar y corregir problema de comprobantes de pago para admins PENDIENTE_APROBACION"
   stuck_tasks:
     - "Problema de routing en frontend - /superadmin/admins no muestra la página correcta"
   test_all: false
