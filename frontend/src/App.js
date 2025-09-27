@@ -1260,21 +1260,8 @@ const AdminLogin = () => {
             </div>
           </form>
         ) : (
-          // Register Form (placeholder)
-          <div className="mt-8 space-y-6">
-            <div className="bg-yellow-50 p-4 rounded-md">
-              <p className="text-sm text-yellow-800">
-                🚧 Funcionalidad en desarrollo: Registro de admins con lavaderos
-              </p>
-            </div>
-            
-            <button
-              onClick={() => setShowRegister(false)}
-              className="w-full text-center text-blue-600 hover:text-blue-500"
-            >
-              ← Volver al login
-            </button>
-          </div>
+          // Register Form
+          <RegisterAdminForm onSuccess={() => setShowRegister(false)} />
         )}
 
         {/* Información para Super Admin */}
