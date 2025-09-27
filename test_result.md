@@ -174,6 +174,18 @@ backend:
         agent: "testing"
         comment: "✅ PROBLEMA RESUELTO - Identifiqué que Juan tenía un pago CONFIRMADO (creado por toggle) pero necesitaba un pago PENDIENTE para subir comprobantes. CORRECCIÓN APLICADA: Creé manualmente un pago PENDIENTE para Juan (ID: c2157c7a-f59b-4162-896c-0cd3bda3587c, $10000, mes 2025-09). VERIFICACIÓN COMPLETA: ✅ Juan puede hacer login, ✅ GET /admin/pago-pendiente devuelve tiene_pago_pendiente: true, ✅ POST /comprobante-mensualidad funciona correctamente, ✅ Comprobante creado con estado PENDIENTE, ✅ GET /admin/mis-comprobantes muestra el comprobante. FUNCIONALIDAD DE COMPROBANTES COMPLETAMENTE OPERATIVA para admins PENDIENTE_APROBACION."
 
+  - task: "Probar nuevo endpoint de subida de archivos para comprobantes de pago"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "🎉 NUEVA FUNCIONALIDAD DE SUBIDA DE ARCHIVOS COMPLETAMENTE FUNCIONAL - Probé exhaustivamente el nuevo endpoint POST /comprobante-mensualidad con multipart/form-data: ✅ PRUEBA 1: Login como Juan (juan@lavaderonorte.com/juan123) exitoso, ✅ PRUEBA 2: Subida de archivo JPEG válido funciona perfectamente - archivo guardado en /app/uploads/comprobantes/ con nombre único, ✅ PRUEBA 3: Validaciones funcionan correctamente - archivos >5MB rechazados, tipos no soportados rechazados, ✅ PRUEBA 4: Almacenamiento persistente verificado - archivo físicamente presente en servidor, ✅ PRUEBA 5: URL generada accesible vía web, ✅ PRUEBA 6: Base de datos actualizada correctamente - comprobante creado con estado PENDIENTE. CAMBIOS IMPLEMENTADOS: Backend usa UploadFile de FastAPI, validación de tipos (JPEG/PNG/GIF/WEBP), validación de tamaño (máx 5MB), almacenamiento en /app/uploads/comprobantes/, generación de nombres únicos, URLs accesibles. RESULTADO: 7/7 pruebas exitosas (100% success rate)."
+
 frontend:
   - task: "Modificar botón toggle para activar/desactivar lavaderos"
     implemented: true
