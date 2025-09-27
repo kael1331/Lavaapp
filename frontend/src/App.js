@@ -1963,6 +1963,15 @@ const GestionAdmins = () => {
   const [editingAdmin, setEditingAdmin] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [showPassword, setShowPassword] = useState({});
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [createForm, setCreateForm] = useState({
+    email: '',
+    password: '',
+    nombre: '',
+    lavadero_nombre: '',
+    lavadero_direccion: '',
+    lavadero_descripcion: ''
+  });
 
   useEffect(() => {
     fetchAdmins();
