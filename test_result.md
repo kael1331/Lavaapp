@@ -252,6 +252,18 @@ backend:
         agent: "testing"
         comment: "🎉 NUEVA FUNCIONALIDAD DE CONFIGURACIÓN SUPER ADMIN COMPLETAMENTE FUNCIONAL - Probé exhaustivamente los nuevos endpoints según especificaciones del review request: ✅ PRUEBA 1: GET /superadmin/configuracion funciona correctamente, obtiene configuración existente con estructura {id, alias_bancario, precio_mensualidad, created_at}, ✅ PRUEBA 2: PUT /superadmin/configuracion funciona perfectamente con datos válidos (alias_bancario: 'super.admin.sistema.mp', precio_mensualidad: 15000.0), devuelve mensaje de confirmación exitoso, ✅ PRUEBA 3: Todas las validaciones funcionan correctamente - alias vacío (400), precio negativo (400), precio cero (400), precio no numérico (400), campos faltantes (400), todas con mensajes de error apropiados, ✅ PRUEBA 4: Persistencia verificada - cambios se guardan correctamente en base de datos, GET posterior confirma valores actualizados, ✅ PRUEBA 5: Autorización funciona perfectamente - Super Admin tiene acceso completo, admin regular recibe 403 Forbidden en ambos endpoints. CORRECCIÓN APLICADA: Solucioné error 500 de serialización ObjectId en GET endpoint removiendo '_id' del documento MongoDB. RESULTADO: 13/13 pruebas exitosas (100% success rate). Los endpoints de configuración están completamente operativos y listos para producción."
 
+  - task: "Implementar nueva funcionalidad de mostrar alias bancario del Super Admin en página de comprobantes"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "🎉 NUEVA FUNCIONALIDAD DE ALIAS BANCARIO COMPLETAMENTE FUNCIONAL Y VERIFICADA - Probé exhaustivamente la nueva funcionalidad según especificaciones del review request: ✅ PRUEBA 1: Login como admin con pago pendiente (juan@lavaderonorte.com/juan123) exitoso, ✅ PRUEBA 2: GET /admin/pago-pendiente ahora incluye el nuevo campo 'alias_bancario_superadmin' correctamente, ✅ PRUEBA 3: El alias devuelto ('Adenda.reto.corte') coincide perfectamente con la configuración del Super Admin obtenida de GET /superadmin/configuracion, ✅ PRUEBA 4: Toda la funcionalidad existente se mantiene intacta (tiene_pago_pendiente, pago_id, monto, mes_año, fecha_vencimiento, tiene_comprobante, estado_comprobante), ✅ PRUEBA 5: Integración frontend lista - todos los datos necesarios presentes para mostrar 'Datos para la Transferencia' con monto ($5000.0) y alias bancario. SETUP REALIZADO: Creé pago pendiente para Juan usando toggle lavadero para testing completo. RESULTADO: 5/5 pruebas exitosas (100% success rate). La nueva funcionalidad permite a los administradores ver exactamente dónde realizar la transferencia, cumpliendo completamente el objetivo del review request."
+
 frontend:
   - task: "Modificar botón toggle para activar/desactivar lavaderos"
     implemented: true
