@@ -1352,6 +1352,293 @@ class AuthenticationAPITester:
         
         return results
     
+    # ========== SPECIFIC TASK: TEST NEW COMPROBANTES HISTORIAL ENDPOINT ==========
+    
+    def test_comprobantes_historial_endpoint(self, super_admin_token):
+        """
+        SPECIFIC TASK: Test new /superadmin/comprobantes-historial endpoint
+        
+        Requirements from review request:
+        1. Login as Super Admin (kearcangel@gmail.com / K@#l1331)
+        2. GET /superadmin/comprobantes-historial without parameters
+        3. Verify response structure: {comprobantes, total, stats, filters}
+        4. Verify stats contain: total, pendientes, aprobados, rechazados
+        5. Test filters: estado=PENDIENTE, CONFIRMADO, RECHAZADO
+        6. Test pagination: limit and offset
+        7. Compare with existing /superadmin/comprobantes-pendientes
+        """
+        print("\n🎯 TESTING NEW COMPROBANTES HISTORIAL ENDPOINT...")
+        print("=" * 70)
+        
+        results = {
+            'basic_endpoint_works': False,
+            'correct_structure': False,
+            'stats_correct': False,
+            'filters_work': False,
+            'pagination_works': False,
+            'comparison_matches': False,
+            'response_data': None
+        }
+        
+        # Step 1: Test basic endpoint without parameters
+        print("\n1️⃣ Testing basic endpoint GET /superadmin/comprobantes-historial...")
+        
+        basic_success, basic_data = self.run_test(
+            "Get Comprobantes Historial - Basic",
+            "GET",
+            "superadmin/comprobantes-historial",
+            200,
+            token=super_admin_token
+        )
+        
+        if basic_success and isinstance(basic_data, dict):
+            results['basic_endpoint_works'] = True
+            results['response_data'] = basic_data
+            print("✅ Basic endpoint working")
+            
+            # Verify response structure
+            required_keys = ['comprobantes', 'total', 'stats', 'filters']
+            structure_correct = all(key in basic_data for key in required_keys)
+            
+            if structure_correct:
+                results['correct_structure'] = True
+                print("✅ Response structure correct - contains: comprobantes, total, stats, filters")
+                
+                # Display basic info
+                total = basic_data.get('total', 0)
+                comprobantes_count = len(basic_data.get('comprobantes', []))
+                print(f"   Total comprobantes: {total}")
+                print(f"   Comprobantes returned: {comprobantes_count}")
+                
+                # Verify stats structure
+                stats = basic_data.get('stats', {})
+                required_stats = ['total', 'pendientes', 'aprobados', 'rechazados']
+                stats_correct = all(key in stats for key in required_stats)
+                
+                if stats_correct:
+                    results['stats_correct'] = True
+                    print("✅ Stats structure correct")
+                    print(f"   Stats: Total={stats.get('total')}, Pendientes={stats.get('pendientes')}, Aprobados={stats.get('aprobados')}, Rechazados={stats.get('rechazados')}")
+                    
+                    # Verify stats numbers make sense
+                    stats_total = stats.get('pendientes', 0) + stats.get('aprobados', 0) + stats.get('rechazados', 0)
+                    if stats_total == stats.get('total', 0):
+                        print("✅ Stats numbers are consistent")
+                    else:
+                        print(f"⚠️  Stats inconsistency: sum={stats_total}, total={stats.get('total')}")
+                else:
+                    print("❌ Stats structure incorrect - missing keys")
+                    print(f"   Available stats keys: {list(stats.keys())}")
+            else:
+                print("❌ Response structure incorrect")
+                print(f"   Available keys: {list(basic_data.keys())}")
+                print(f"   Required keys: {required_keys}")
+        else:
+            print("❌ Basic endpoint failed")
+            return results
+        
+        # Step 2: Test filters
+        print("\n2️⃣ Testing filters...")
+        
+        filter_tests = [
+            ("PENDIENTE", "pendientes"),
+            ("CONFIRMADO", "aprobados"), 
+            ("RECHAZADO", "rechazados")
+        ]
+        
+        filter_results = []
+        for estado, stats_key in filter_tests:
+            print(f"\n   Testing filter: estado={estado}")
+            
+            filter_success, filter_data = self.run_test(
+                f"Get Comprobantes Historial - Filter {estado}",
+                "GET",
+                f"superadmin/comprobantes-historial?estado={estado}",
+                200,
+                token=super_admin_token
+            )
+            
+            if filter_success and isinstance(filter_data, dict):
+                comprobantes = filter_data.get('comprobantes', [])
+                total = filter_data.get('total', 0)
+                filters_applied = filter_data.get('filters', {})
+                
+                print(f"   ✅ Filter {estado} works - {total} comprobantes found")
+                print(f"   Applied filters: {filters_applied}")
+                
+                # Verify all returned comprobantes have the correct estado
+                if comprobantes:
+                    estados_found = set(comp.get('estado') for comp in comprobantes)
+                    if estados_found == {estado}:
+                        print(f"   ✅ All comprobantes have estado={estado}")
+                    else:
+                        print(f"   ⚠️  Mixed estados found: {estados_found}")
+                
+                filter_results.append(True)
+            else:
+                print(f"   ❌ Filter {estado} failed")
+                filter_results.append(False)
+        
+        if all(filter_results):
+            results['filters_work'] = True
+            print("✅ All filters working correctly")
+        else:
+            print("❌ Some filters failed")
+        
+        # Step 3: Test pagination
+        print("\n3️⃣ Testing pagination...")
+        
+        # Test with limit=2, offset=0
+        page1_success, page1_data = self.run_test(
+            "Get Comprobantes Historial - Page 1 (limit=2, offset=0)",
+            "GET",
+            "superadmin/comprobantes-historial?limit=2&offset=0",
+            200,
+            token=super_admin_token
+        )
+        
+        # Test with limit=2, offset=2
+        page2_success, page2_data = self.run_test(
+            "Get Comprobantes Historial - Page 2 (limit=2, offset=2)",
+            "GET",
+            "superadmin/comprobantes-historial?limit=2&offset=2",
+            200,
+            token=super_admin_token
+        )
+        
+        if page1_success and page2_success:
+            page1_comprobantes = page1_data.get('comprobantes', [])
+            page2_comprobantes = page2_data.get('comprobantes', [])
+            
+            print(f"✅ Pagination working - Page 1: {len(page1_comprobantes)} items, Page 2: {len(page2_comprobantes)} items")
+            
+            # Verify no overlap between pages
+            if page1_comprobantes and page2_comprobantes:
+                page1_ids = set(comp.get('comprobante_id') for comp in page1_comprobantes)
+                page2_ids = set(comp.get('comprobante_id') for comp in page2_comprobantes)
+                
+                if not page1_ids.intersection(page2_ids):
+                    results['pagination_works'] = True
+                    print("✅ No overlap between pages - pagination working correctly")
+                else:
+                    print("⚠️  Overlap found between pages")
+            else:
+                results['pagination_works'] = True
+                print("✅ Pagination working (one or both pages empty)")
+        else:
+            print("❌ Pagination tests failed")
+        
+        # Step 4: Compare with existing endpoint
+        print("\n4️⃣ Comparing with existing /superadmin/comprobantes-pendientes...")
+        
+        existing_success, existing_data = self.run_test(
+            "Get Comprobantes Pendientes - Existing endpoint",
+            "GET",
+            "superadmin/comprobantes-pendientes",
+            200,
+            token=super_admin_token
+        )
+        
+        if existing_success and isinstance(existing_data, list):
+            existing_count = len(existing_data)
+            print(f"✅ Existing endpoint works - {existing_count} pendientes found")
+            
+            # Compare with filtered new endpoint
+            new_pendientes_success, new_pendientes_data = self.run_test(
+                "Get Comprobantes Historial - PENDIENTE filter for comparison",
+                "GET",
+                "superadmin/comprobantes-historial?estado=PENDIENTE",
+                200,
+                token=super_admin_token
+            )
+            
+            if new_pendientes_success and isinstance(new_pendientes_data, dict):
+                new_comprobantes = new_pendientes_data.get('comprobantes', [])
+                new_count = len(new_comprobantes)
+                
+                print(f"   New endpoint PENDIENTE filter: {new_count} comprobantes")
+                print(f"   Existing endpoint: {existing_count} comprobantes")
+                
+                if new_count == existing_count:
+                    results['comparison_matches'] = True
+                    print("✅ Both endpoints return same number of PENDIENTE comprobantes")
+                    
+                    # Compare some fields if both have data
+                    if existing_data and new_comprobantes:
+                        print("   Comparing first comprobante from each endpoint:")
+                        existing_first = existing_data[0]
+                        new_first = new_comprobantes[0]
+                        
+                        # Compare common fields
+                        common_fields = ['admin_email', 'lavadero_nombre', 'monto']
+                        for field in common_fields:
+                            existing_val = existing_first.get(field)
+                            new_val = new_first.get(field)
+                            if existing_val == new_val:
+                                print(f"   ✅ {field}: {existing_val}")
+                            else:
+                                print(f"   ⚠️  {field} differs: existing={existing_val}, new={new_val}")
+                else:
+                    print(f"⚠️  Count mismatch - existing: {existing_count}, new: {new_count}")
+            else:
+                print("❌ New endpoint PENDIENTE filter failed")
+        else:
+            print("❌ Existing endpoint failed")
+        
+        # Step 5: Test edge cases
+        print("\n5️⃣ Testing edge cases...")
+        
+        # Test invalid estado filter
+        invalid_success, invalid_data = self.run_test(
+            "Get Comprobantes Historial - Invalid estado filter",
+            "GET",
+            "superadmin/comprobantes-historial?estado=INVALID",
+            200,  # Should still work but return empty or all results
+            token=super_admin_token
+        )
+        
+        if invalid_success:
+            print("✅ Invalid estado filter handled gracefully")
+        
+        # Test large limit
+        large_limit_success, large_limit_data = self.run_test(
+            "Get Comprobantes Historial - Large limit",
+            "GET",
+            "superadmin/comprobantes-historial?limit=1000",
+            200,
+            token=super_admin_token
+        )
+        
+        if large_limit_success:
+            print("✅ Large limit handled correctly")
+        
+        # Final summary
+        print("\n" + "=" * 70)
+        print("📊 COMPROBANTES HISTORIAL ENDPOINT TEST SUMMARY:")
+        
+        test_results = [
+            ("Basic endpoint functionality", results['basic_endpoint_works']),
+            ("Response structure correct", results['correct_structure']),
+            ("Statistics correct", results['stats_correct']),
+            ("Filters working", results['filters_work']),
+            ("Pagination working", results['pagination_works']),
+            ("Comparison with existing endpoint", results['comparison_matches'])
+        ]
+        
+        all_passed = True
+        for test_name, test_result in test_results:
+            status = "✅" if test_result else "❌"
+            print(f"   {status} {test_name}")
+            if not test_result:
+                all_passed = False
+        
+        if all_passed:
+            print("\n🎉 ALL TESTS PASSED - New comprobantes historial endpoint working perfectly!")
+        else:
+            print("\n⚠️  SOME TESTS FAILED - Review issues above")
+        
+        return results
+
     # ========== SPECIFIC TASK: CREATE 2 NEW ADMINS FOR TESTING ==========
     
     def test_create_two_new_admins_for_testing(self, super_admin_token):
