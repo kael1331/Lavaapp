@@ -3212,6 +3212,7 @@ def run_bank_alias_functionality_tests():
     critical_tests = [
         alias_results['super_admin_config_works'],
         alias_results['juan_login_works'],
+        alias_results.get('juan_has_pending_payment', False),
         alias_results['pago_pendiente_includes_alias'],
         alias_results['alias_matches_config'],
         alias_results['existing_functionality_works']
