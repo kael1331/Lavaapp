@@ -891,6 +891,8 @@ const AdminDashboard = () => {
   const { user } = useAuth();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [estaAbierto, setEstaAbierto] = useState(false);
+  const [toggleLoading, setToggleLoading] = useState(false);
 
   useEffect(() => {
     fetchStats();
@@ -900,10 +902,47 @@ const AdminDashboard = () => {
     try {
       const response = await axios.get(`${API}/dashboard/stats`);
       setStats(response.data);
+      
+      // También obtener el estado de apertura desde la configuración
+      try {
+        const configResponse = await axios.get(`${API}/admin/configuracion`);
+        setEstaAbierto(configResponse.data.esta_abierto || false);
+      } catch (configError) {
+        console.error('Error fetching config:', configError);
+      }
     } catch (error) {
       console.error('Error fetching stats:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleToggleApertura = async () => {
+    setToggleLoading(true);
+    try {
+      const response = await axios.post(`${API}/admin/toggle-apertura`);
+      setEstaAbierto(response.data.esta_abierto);
+      
+      // Mostrar mensaje de confirmación
+      const mensaje = response.data.esta_abierto 
+        ? '🟢 Lavadero abierto - Los clientes pueden hacer reservas'
+        : '🔴 Lavadero cerrado - No se aceptan nuevas reservas';
+      
+      // Crear una notificación visual temporal
+      const notification = document.createElement('div');
+      notification.className = `fixed top-20 right-4 z-50 p-4 rounded-lg shadow-lg transition-all duration-300 ${
+        response.data.esta_abierto ? 'bg-green-500' : 'bg-red-500'
+      } text-white`;
+      notification.textContent = mensaje;
+      document.body.appendChild(notification);
+      
+      setTimeout(() => {
+        notification.remove();
+      }, 3000);
+    } catch (error) {
+      alert(error.response?.data?.detail || 'Error al cambiar estado de apertura');
+    } finally {
+      setToggleLoading(false);
     }
   };
 
@@ -913,26 +952,69 @@ const AdminDashboard = () => {
 
   return (
     <div>
-      <div className="bg-white p-4 rounded-lg shadow mb-6">
-        <h3 className="text-lg font-semibold text-gray-800">Estado del Lavadero</h3>
-        <div className="mt-2">
-          <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-            stats?.estado_operativo === 'ACTIVO' 
-              ? 'bg-green-100 text-green-800' 
-              : stats?.estado_operativo === 'PENDIENTE_APROBACION'
-              ? 'bg-yellow-100 text-yellow-800'
-              : 'bg-red-100 text-red-800'
-          }`}>
-            {stats?.estado_operativo}
-          </span>
-          {stats?.dias_restantes !== undefined && (
-            <span className="ml-4 text-sm text-gray-600">
-              Días restantes: {stats.dias_restantes}
-            </span>
-          )}
+      {/* Estado del Lavadero y Control de Apertura */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div className="bg-white p-4 rounded-lg shadow">
+          <h3 className="text-lg font-semibold text-gray-800 mb-3">Estado del Lavadero</h3>
+          <div className="space-y-2">
+            <div>
+              <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                stats?.estado_operativo === 'ACTIVO' 
+                  ? 'bg-green-100 text-green-800' 
+                  : stats?.estado_operativo === 'PENDIENTE_APROBACION'
+                  ? 'bg-yellow-100 text-yellow-800'
+                  : 'bg-red-100 text-red-800'
+              }`}>
+                {stats?.estado_operativo}
+              </span>
+              {stats?.dias_restantes !== undefined && (
+                <span className="ml-4 text-sm text-gray-600">
+                  Días restantes: {stats.dias_restantes}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Control de Apertura en Tiempo Real */}
+        <div className="bg-white p-4 rounded-lg shadow">
+          <h3 className="text-lg font-semibold text-gray-800 mb-3">Control de Apertura</h3>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className={`w-3 h-3 rounded-full ${estaAbierto ? 'bg-green-500' : 'bg-red-500'}`}></div>
+              <span className="font-medium text-gray-900">
+                {estaAbierto ? 'Lavadero Abierto' : 'Lavadero Cerrado'}
+              </span>
+            </div>
+            
+            <button
+              onClick={handleToggleApertura}
+              disabled={toggleLoading}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 ${
+                estaAbierto 
+                  ? 'bg-red-600 hover:bg-red-700 text-white' 
+                  : 'bg-green-600 hover:bg-green-700 text-white'
+              }`}
+            >
+              {toggleLoading 
+                ? 'Cambiando...' 
+                : estaAbierto 
+                  ? '🔴 Cerrar Lavadero' 
+                  : '🟢 Abrir Lavadero'
+              }
+            </button>
+          </div>
+          
+          <p className="text-sm text-gray-500 mt-2">
+            {estaAbierto 
+              ? 'Los clientes pueden hacer reservas en tiempo real'
+              : 'No se aceptan nuevas reservas hasta que abras el lavadero'
+            }
+          </p>
         </div>
       </div>
       
+      {/* Estadísticas */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-blue-50 p-6 rounded-lg">
           <h3 className="text-lg font-semibold text-blue-800">Total Turnos</h3>
