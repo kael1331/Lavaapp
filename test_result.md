@@ -288,7 +288,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Implementar endpoints de configuración del Super Admin"
+    - "Implementar nueva funcionalidad de mostrar alias bancario del Super Admin en página de comprobantes"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
