@@ -446,10 +446,13 @@ const Navigation = ({ toggleSidebar }) => {
                   <p className="text-xs text-gray-500">{user.email}</p>
                 </div>
                 
-                <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2">
+                <Link 
+                  to="/perfil"
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
+                >
                   <span>👤</span>
                   <span>Mi Perfil</span>
-                </button>
+                </Link>
                 
                 <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2">
                   <span>⚙️</span>
