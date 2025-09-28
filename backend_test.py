@@ -3175,9 +3175,71 @@ def run_super_admin_configuration_tests():
         print(f"❌ Failed tests: {', '.join(failed_tests)}")
         return False
 
+def run_bank_alias_functionality_tests():
+    """Run tests specifically for the new bank alias functionality in pago-pendiente endpoint"""
+    print("🚀 Starting Bank Alias Functionality Testing...")
+    print("=" * 70)
+    print("OBJECTIVE: Test new bank alias functionality in /admin/pago-pendiente endpoint")
+    print("NEW FEATURE: alias_bancario_superadmin field added to pago-pendiente response")
+    print("=" * 70)
+    
+    tester = AuthenticationAPITester()
+    
+    # Test Super Admin login first
+    super_admin_success, super_admin_token, super_admin_user = tester.test_super_admin_login()
+    
+    if super_admin_success and super_admin_token:
+        print(f"✅ Super Admin authenticated: {super_admin_user.get('email')}")
+        
+        # Test the new bank alias functionality
+        alias_results = tester.test_new_bank_alias_functionality(super_admin_token)
+        print(f"\n📊 Bank Alias Functionality Test Results: {alias_results}")
+        
+    else:
+        print("❌ Super Admin login failed - cannot test bank alias functionality")
+        return False
+    
+    # Final summary
+    print("\n" + "=" * 70)
+    print("📊 BANK ALIAS FUNCTIONALITY TEST SUMMARY")
+    print("=" * 70)
+    print(f"Total tests run: {tester.tests_run}")
+    print(f"Tests passed: {tester.tests_passed}")
+    print(f"Tests failed: {tester.tests_run - tester.tests_passed}")
+    print(f"Success rate: {(tester.tests_passed / tester.tests_run * 100):.1f}%")
+    
+    # Check if all critical tests passed
+    critical_tests = [
+        alias_results['super_admin_config_works'],
+        alias_results['juan_login_works'],
+        alias_results['pago_pendiente_includes_alias'],
+        alias_results['alias_matches_config'],
+        alias_results['existing_functionality_works']
+    ]
+    
+    all_critical_passed = all(critical_tests)
+    
+    if all_critical_passed:
+        print("🎉 ALL BANK ALIAS FUNCTIONALITY TESTS PASSED!")
+        print("✅ New alias_bancario_superadmin field working correctly")
+        print("✅ Alias matches Super Admin configuration")
+        print("✅ Existing functionality preserved")
+        print("✅ Juan can access pending payment with bank alias")
+        return True
+    else:
+        print("⚠️  SOME CRITICAL TESTS FAILED!")
+        failed_tests = []
+        if not alias_results['super_admin_config_works']: failed_tests.append("Super Admin config access")
+        if not alias_results['juan_login_works']: failed_tests.append("Juan login")
+        if not alias_results['pago_pendiente_includes_alias']: failed_tests.append("New alias field missing")
+        if not alias_results['alias_matches_config']: failed_tests.append("Alias mismatch")
+        if not alias_results['existing_functionality_works']: failed_tests.append("Existing functionality broken")
+        print(f"❌ Failed tests: {', '.join(failed_tests)}")
+        return False
+
 def main():
-    """Main function to run Super Admin configuration tests"""
-    success = run_super_admin_configuration_tests()
+    """Main function to run bank alias functionality tests"""
+    success = run_bank_alias_functionality_tests()
     
     if success:
         print("🎉 All tests passed!")
