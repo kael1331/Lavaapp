@@ -213,6 +213,18 @@ backend:
         agent: "testing"
         comment: "🎯 NUEVA FUNCIONALIDAD PROBADA EXITOSAMENTE - CICLO COMPLETO FUNCIONAL (85.7% success rate): ✅ PRUEBA 1: Encontrado admin con lavadero ACTIVO (Juan - juan@lavaderonorte.com), ✅ PRUEBA 2: Desactivación exitosa ACTIVO → PENDIENTE_APROBACION usando POST /superadmin/toggle-lavadero/{admin_id}, ✅ PRUEBA 3: Admin puede hacer login después de desactivación, ✅ PRUEBA 4: GET /admin/pago-pendiente devuelve tiene_pago_pendiente: true (pago PENDIENTE creado automáticamente), ✅ PRUEBA 5: Admin puede subir comprobante exitosamente con multipart/form-data, ✅ PRUEBA 6: Reactivación exitosa PENDIENTE_APROBACION → ACTIVO. OBJETIVO CUMPLIDO: El ciclo completo funciona perfectamente - ACTIVO → DESACTIVAR (crea pago PENDIENTE) → ADMIN puede subir nuevo comprobante → SUPER ADMIN puede reactivar lavadero. ÚNICA OBSERVACIÓN MENOR: El mensaje de respuesta no dice explícitamente 'Nuevo pago PENDIENTE creado' pero la funcionalidad trabaja correctamente."
 
+  - task: "Probar nuevo endpoint de historial de comprobantes /superadmin/comprobantes-historial"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implementado nuevo endpoint /superadmin/comprobantes-historial que permite ver historial completo de comprobantes (PENDIENTES, CONFIRMADOS, RECHAZADOS) con filtros y paginación. Necesita testing completo para verificar funcionalidad."
+
 frontend:
   - task: "Modificar botón toggle para activar/desactivar lavaderos"
     implemented: true
