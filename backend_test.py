@@ -1352,6 +1352,272 @@ class AuthenticationAPITester:
         
         return results
     
+    # ========== SPECIFIC TASK: TEST NEW SUPER ADMIN CONFIGURATION ENDPOINTS ==========
+    
+    def test_super_admin_configuration_endpoints(self, super_admin_token):
+        """
+        SPECIFIC TASK: Test new Super Admin configuration endpoints
+        
+        Requirements from review request:
+        1. GET /superadmin/configuracion - Obtener configuración inicial
+        2. PUT /superadmin/configuracion - Actualizar configuración válida
+        3. Validaciones de entrada (alias vacío, precio negativo, precio no numérico)
+        4. Persistencia - verificar que cambios se guardan
+        5. Autorización - solo SUPER_ADMIN puede acceder
+        """
+        print("\n🎯 TESTING NEW SUPER ADMIN CONFIGURATION ENDPOINTS...")
+        print("=" * 70)
+        
+        results = {
+            'get_config_works': False,
+            'default_config_created': False,
+            'correct_structure': False,
+            'put_config_works': False,
+            'validations_work': False,
+            'persistence_works': False,
+            'authorization_works': False,
+            'initial_config': None,
+            'updated_config': None
+        }
+        
+        # Step 1: Test GET /superadmin/configuracion (initial configuration)
+        print("\n1️⃣ Testing GET /superadmin/configuracion (initial configuration)...")
+        
+        get_success, get_data = self.run_test(
+            "Get Super Admin Configuration - Initial",
+            "GET",
+            "superadmin/configuracion",
+            200,
+            token=super_admin_token
+        )
+        
+        if get_success and isinstance(get_data, dict):
+            results['get_config_works'] = True
+            results['initial_config'] = get_data
+            print("✅ GET configuration endpoint working")
+            
+            # Verify structure
+            required_keys = ['alias_bancario', 'precio_mensualidad', 'id', 'created_at']
+            structure_correct = all(key in get_data for key in required_keys)
+            
+            if structure_correct:
+                results['correct_structure'] = True
+                print("✅ Configuration structure correct")
+                print(f"   Alias bancario: {get_data.get('alias_bancario')}")
+                print(f"   Precio mensualidad: ${get_data.get('precio_mensualidad')}")
+                print(f"   ID: {get_data.get('id')}")
+                print(f"   Created at: {get_data.get('created_at')}")
+                
+                # Check if this is default configuration
+                if get_data.get('alias_bancario') == 'superadmin.sistema.mp' and get_data.get('precio_mensualidad') == 10000.0:
+                    results['default_config_created'] = True
+                    print("✅ Default configuration created correctly")
+                else:
+                    print("ℹ️  Configuration already exists (not default)")
+            else:
+                print("❌ Configuration structure incorrect")
+                print(f"   Available keys: {list(get_data.keys())}")
+                print(f"   Required keys: {required_keys}")
+        else:
+            print("❌ GET configuration endpoint failed")
+            return results
+        
+        # Step 2: Test PUT /superadmin/configuracion with valid data
+        print("\n2️⃣ Testing PUT /superadmin/configuracion with valid data...")
+        
+        valid_config = {
+            "alias_bancario": "super.admin.sistema.mp",
+            "precio_mensualidad": 15000.0
+        }
+        
+        put_success, put_data = self.run_test(
+            "Update Super Admin Configuration - Valid Data",
+            "PUT",
+            "superadmin/configuracion",
+            200,
+            data=valid_config,
+            token=super_admin_token
+        )
+        
+        if put_success and isinstance(put_data, dict):
+            results['put_config_works'] = True
+            results['updated_config'] = put_data
+            print("✅ PUT configuration endpoint working")
+            
+            # Verify response message
+            if 'message' in put_data and 'exitosamente' in put_data['message']:
+                print("✅ Success message received")
+                print(f"   Message: {put_data.get('message')}")
+                print(f"   Updated alias: {put_data.get('alias_bancario')}")
+                print(f"   Updated precio: ${put_data.get('precio_mensualidad')}")
+            else:
+                print("⚠️  Success message not found or incorrect")
+        else:
+            print("❌ PUT configuration endpoint failed")
+            return results
+        
+        # Step 3: Test validations
+        print("\n3️⃣ Testing input validations...")
+        
+        validation_tests = [
+            {
+                'name': 'Empty alias bancario',
+                'data': {"alias_bancario": "", "precio_mensualidad": 15000.0},
+                'expected_status': 400
+            },
+            {
+                'name': 'Missing alias bancario',
+                'data': {"precio_mensualidad": 15000.0},
+                'expected_status': 400
+            },
+            {
+                'name': 'Negative precio mensualidad',
+                'data': {"alias_bancario": "test.alias.mp", "precio_mensualidad": -1000.0},
+                'expected_status': 400
+            },
+            {
+                'name': 'Zero precio mensualidad',
+                'data': {"alias_bancario": "test.alias.mp", "precio_mensualidad": 0.0},
+                'expected_status': 400
+            },
+            {
+                'name': 'Non-numeric precio mensualidad',
+                'data': {"alias_bancario": "test.alias.mp", "precio_mensualidad": "not_a_number"},
+                'expected_status': 400
+            },
+            {
+                'name': 'Missing precio mensualidad',
+                'data': {"alias_bancario": "test.alias.mp"},
+                'expected_status': 400
+            }
+        ]
+        
+        validation_passed = 0
+        for test in validation_tests:
+            print(f"\n   Testing: {test['name']}")
+            
+            success, response = self.run_test(
+                f"Validation Test - {test['name']}",
+                "PUT",
+                "superadmin/configuracion",
+                test['expected_status'],
+                data=test['data'],
+                token=super_admin_token
+            )
+            
+            if success:
+                validation_passed += 1
+                print(f"✅ Validation working - {test['name']}")
+                if isinstance(response, dict) and 'detail' in response:
+                    print(f"   Error message: {response['detail']}")
+            else:
+                print(f"❌ Validation failed - {test['name']}")
+        
+        if validation_passed == len(validation_tests):
+            results['validations_work'] = True
+            print(f"✅ All validations working ({validation_passed}/{len(validation_tests)})")
+        else:
+            print(f"⚠️  Some validations failed ({validation_passed}/{len(validation_tests)})")
+        
+        # Step 4: Test persistence - verify changes were saved
+        print("\n4️⃣ Testing persistence - verify changes were saved...")
+        
+        persistence_success, persistence_data = self.run_test(
+            "Verify Configuration Persistence",
+            "GET",
+            "superadmin/configuracion",
+            200,
+            token=super_admin_token
+        )
+        
+        if persistence_success and isinstance(persistence_data, dict):
+            saved_alias = persistence_data.get('alias_bancario')
+            saved_precio = persistence_data.get('precio_mensualidad')
+            
+            if saved_alias == valid_config['alias_bancario'] and saved_precio == valid_config['precio_mensualidad']:
+                results['persistence_works'] = True
+                print("✅ Configuration changes persisted correctly")
+                print(f"   Saved alias: {saved_alias}")
+                print(f"   Saved precio: ${saved_precio}")
+            else:
+                print("❌ Configuration changes not persisted correctly")
+                print(f"   Expected alias: {valid_config['alias_bancario']}, Got: {saved_alias}")
+                print(f"   Expected precio: ${valid_config['precio_mensualidad']}, Got: ${saved_precio}")
+        else:
+            print("❌ Failed to verify persistence")
+        
+        # Step 5: Test authorization - regular admin should not have access
+        print("\n5️⃣ Testing authorization - regular admin should be forbidden...")
+        
+        # Login as regular admin (Carlos)
+        carlos_login_success, carlos_token, carlos_user = self.test_login(
+            "carlos@lavaderosur.com", "carlos123", "Carlos (Regular Admin)"
+        )
+        
+        if carlos_login_success and carlos_token:
+            print("✅ Regular admin login successful")
+            
+            # Test GET with regular admin (should fail)
+            auth_test1_success, _ = self.run_test(
+                "Regular Admin tries GET /superadmin/configuracion (should fail)",
+                "GET",
+                "superadmin/configuracion",
+                403,
+                token=carlos_token
+            )
+            
+            # Test PUT with regular admin (should fail)
+            auth_test2_success, _ = self.run_test(
+                "Regular Admin tries PUT /superadmin/configuracion (should fail)",
+                "PUT",
+                "superadmin/configuracion",
+                403,
+                data={"alias_bancario": "hacker.attempt.mp", "precio_mensualidad": 1.0},
+                token=carlos_token
+            )
+            
+            if auth_test1_success and auth_test2_success:
+                results['authorization_works'] = True
+                print("✅ Authorization working - regular admin correctly forbidden")
+            else:
+                print("❌ Authorization not working - regular admin has access")
+        else:
+            print("❌ Could not login as regular admin to test authorization")
+        
+        # Step 6: Summary
+        print("\n6️⃣ Super Admin Configuration Testing Summary...")
+        print("=" * 60)
+        
+        test_results = [
+            ("GET Configuration Works", results['get_config_works']),
+            ("Correct Structure", results['correct_structure']),
+            ("PUT Configuration Works", results['put_config_works']),
+            ("Input Validations Work", results['validations_work']),
+            ("Persistence Works", results['persistence_works']),
+            ("Authorization Works", results['authorization_works'])
+        ]
+        
+        all_passed = True
+        for test_name, test_result in test_results:
+            status = "✅" if test_result else "❌"
+            print(f"   {status} {test_name}")
+            if not test_result:
+                all_passed = False
+        
+        print("\n" + "=" * 60)
+        if all_passed:
+            print("🎉 ALL SUPER ADMIN CONFIGURATION TESTS PASSED!")
+            print("   ✅ Configuration endpoints working correctly")
+            print("   ✅ All validations implemented properly")
+            print("   ✅ Data persistence working")
+            print("   ✅ Authorization security working")
+        else:
+            print("⚠️  SOME CONFIGURATION TESTS FAILED")
+            failed_tests = [name for name, result in test_results if not result]
+            print(f"   Failed tests: {', '.join(failed_tests)}")
+        
+        return results
+
     # ========== SPECIFIC TASK: TEST NEW COMPROBANTES HISTORIAL ENDPOINT ==========
     
     def test_comprobantes_historial_endpoint(self, super_admin_token):
