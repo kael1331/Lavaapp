@@ -1932,6 +1932,92 @@ async def delete_dia_no_laboral(dia_id: str, request: Request):
     
     return {"message": "Día no laboral eliminado exitosamente"}
 
+# ========== ENDPOINTS DE CONFIGURACIÓN SUPER ADMIN ==========
+
+# Obtener configuración del Super Admin
+@api_router.get("/superadmin/configuracion")
+async def get_configuracion_superadmin(request: Request):
+    await get_super_admin_user(request)
+    
+    # Buscar configuración existente
+    config_doc = await db.configuracion_superadmin.find_one({})
+    
+    if not config_doc:
+        # Crear configuración por defecto si no existe
+        default_config = ConfiguracionSuperAdmin(
+            alias_bancario="superadmin.sistema.mp",
+            precio_mensualidad=10000.0
+        )
+        config_dict = default_config.dict()
+        await db.configuracion_superadmin.insert_one(config_dict)
+        return default_config.dict()
+    
+    return config_doc
+
+# Actualizar configuración del Super Admin
+@api_router.put("/superadmin/configuracion")
+async def update_configuracion_superadmin(request: Request, config_data: dict):
+    await get_super_admin_user(request)
+    
+    # Validaciones
+    if "alias_bancario" not in config_data or not config_data["alias_bancario"].strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El alias bancario es requerido"
+        )
+    
+    if "precio_mensualidad" not in config_data:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El precio mensualidad es requerido"
+        )
+    
+    try:
+        precio = float(config_data["precio_mensualidad"])
+        if precio <= 0:
+            raise ValueError("El precio debe ser mayor a cero")
+    except (ValueError, TypeError):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El precio mensualidad debe ser un número válido mayor a cero"
+        )
+    
+    # Buscar configuración existente
+    existing_config = await db.configuracion_superadmin.find_one({})
+    
+    update_data = {
+        "$set": {
+            "alias_bancario": config_data["alias_bancario"].strip(),
+            "precio_mensualidad": precio
+        }
+    }
+    
+    if existing_config:
+        # Actualizar configuración existente
+        result = await db.configuracion_superadmin.update_one(
+            {"id": existing_config["id"]},
+            update_data
+        )
+        
+        if result.modified_count == 0:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="No se pudo actualizar la configuración"
+            )
+    else:
+        # Crear nueva configuración si no existe
+        nueva_config = ConfiguracionSuperAdmin(
+            alias_bancario=config_data["alias_bancario"].strip(),
+            precio_mensualidad=precio
+        )
+        await db.configuracion_superadmin.insert_one(nueva_config.dict())
+    
+    return {
+        "message": "Configuración actualizada exitosamente",
+        "alias_bancario": config_data["alias_bancario"].strip(),
+        "precio_mensualidad": precio
+    }
+
 # Obtener credenciales para testing (Super Admin)
 @api_router.get("/superadmin/credenciales-testing")
 async def get_credenciales_testing(request: Request):
