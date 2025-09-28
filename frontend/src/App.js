@@ -3231,13 +3231,38 @@ const ConfiguracionLavadero = () => {
 
 // Main App Component
 function App() {
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  const toggleSidebar = () => {
+    setIsSidebarCollapsed(!isSidebarCollapsed);
+  };
+
   return (
     <AuthProvider>
       <BrowserRouter>
         <div className="min-h-screen bg-gray-100">
-          <Navigation />
-          
-          <Routes>
+          <AuthConsumer>
+            {({ user }) => (
+              <>
+                {user && (
+                  <>
+                    <Sidebar 
+                      isCollapsed={isSidebarCollapsed} 
+                      setIsCollapsed={setIsSidebarCollapsed} 
+                    />
+                    <Navigation toggleSidebar={toggleSidebar} />
+                  </>
+                )}
+                
+                {/* Main Content */}
+                <div className={`${
+                  user ? 
+                    `transition-all duration-300 pt-16 ${
+                      isSidebarCollapsed ? 'ml-16' : 'ml-64'
+                    }` 
+                    : ''
+                }`}>
+                  <Routes>
             {/* Página principal dual */}
             <Route path="/" element={<HomePage />} />
             
