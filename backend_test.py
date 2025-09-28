@@ -2528,5 +2528,189 @@ def main():
         print("⚠️  Some tests failed!")
         return 1
 
+    def run_visual_changes_verification_tests(self):
+        """
+        SPECIFIC TASK: Verify visual changes didn't break backend functionality
+        
+        Based on review request:
+        - Visual changes: emoji consistency (🧺 → 🚿) and clickable logo
+        - Need to verify backend functionality remains intact
+        - Test specific endpoints mentioned in the request
+        """
+        print("🚀 VISUAL CHANGES VERIFICATION - Backend Functionality Tests...")
+        print("=" * 70)
+        print("OBJECTIVE: Confirm visual changes (emoji + clickable logo) didn't break backend")
+        print("=" * 70)
+        
+        # Test 1: Super Admin Login and Core Endpoints
+        print("\n👑 PRUEBA 1: Super Admin Login and Core Functionality")
+        print("-" * 50)
+        
+        super_admin_success, super_admin_token, super_admin_user = self.test_super_admin_login()
+        
+        if super_admin_success and super_admin_token:
+            print("✅ Super Admin login working correctly")
+            
+            # Test the specific endpoints mentioned in the review request
+            print("\n📋 Testing specific endpoints mentioned in review request...")
+            
+            # GET /superadmin/admins
+            admins_success, admins_data = self.run_test(
+                "GET /superadmin/admins (mentioned in review)",
+                "GET",
+                "superadmin/admins",
+                200,
+                token=super_admin_token
+            )
+            
+            # GET /superadmin/comprobantes-historial
+            historial_success, historial_data = self.run_test(
+                "GET /superadmin/comprobantes-historial (mentioned in review)",
+                "GET",
+                "superadmin/comprobantes-historial",
+                200,
+                token=super_admin_token
+            )
+            
+            # GET /superadmin/credenciales-testing
+            credenciales_success, credenciales_data = self.run_test(
+                "GET /superadmin/credenciales-testing (mentioned in review)",
+                "GET",
+                "superadmin/credenciales-testing",
+                200,
+                token=super_admin_token
+            )
+            
+            # Verify all core endpoints work
+            core_endpoints_working = admins_success and historial_success and credenciales_success
+            
+            if core_endpoints_working:
+                print("✅ All Super Admin core endpoints working correctly")
+                print(f"   • /superadmin/admins: {len(admins_data) if isinstance(admins_data, list) else 'OK'} admins found")
+                print(f"   • /superadmin/comprobantes-historial: {historial_data.get('total', 'OK') if isinstance(historial_data, dict) else 'OK'} comprobantes")
+                print(f"   • /superadmin/credenciales-testing: {len(credenciales_data) if isinstance(credenciales_data, list) else 'OK'} credentials")
+            else:
+                print("❌ Some Super Admin endpoints failed")
+                
+        else:
+            print("❌ Super Admin login failed")
+            return False
+        
+        # Test 2: Regular Admin Login and Configuration
+        print("\n👨‍💼 PRUEBA 2: Regular Admin Login and Configuration")
+        print("-" * 50)
+        
+        # Try login as maria (mentioned in review request)
+        maria_success, maria_token, maria_user = self.test_login(
+            "maria@lavaderocentro.com", "maria123", "María González (mentioned in review)"
+        )
+        
+        if maria_success and maria_token:
+            print("✅ Regular admin (María) login working correctly")
+            
+            # Test GET /admin/configuracion (mentioned in review request)
+            config_success, config_data = self.run_test(
+                "GET /admin/configuracion (mentioned in review)",
+                "GET",
+                "admin/configuracion",
+                200,
+                token=maria_token
+            )
+            
+            if config_success:
+                print("✅ Admin configuration endpoint working correctly")
+                if isinstance(config_data, dict):
+                    print(f"   • Configuration loaded: {len(config_data)} settings")
+            else:
+                print("❌ Admin configuration endpoint failed")
+                
+        else:
+            print("❌ Regular admin (María) login failed")
+            return False
+        
+        # Test 3: Additional Verification - Dashboard Stats
+        print("\n📊 PRUEBA 3: Dashboard and Stats Verification")
+        print("-" * 50)
+        
+        # Test Super Admin dashboard
+        super_dashboard_success, super_dashboard_data = self.run_test(
+            "Super Admin Dashboard Stats",
+            "GET",
+            "dashboard/stats",
+            200,
+            token=super_admin_token
+        )
+        
+        # Test Regular Admin dashboard
+        admin_dashboard_success, admin_dashboard_data = self.run_test(
+            "Regular Admin Dashboard Stats",
+            "GET",
+            "dashboard/stats",
+            200,
+            token=maria_token
+        )
+        
+        dashboard_working = super_dashboard_success and admin_dashboard_success
+        
+        if dashboard_working:
+            print("✅ Dashboard functionality working for both user types")
+            if isinstance(super_dashboard_data, dict):
+                print(f"   • Super Admin dashboard: {len(super_dashboard_data)} metrics")
+            if isinstance(admin_dashboard_data, dict):
+                print(f"   • Regular Admin dashboard: {len(admin_dashboard_data)} metrics")
+        else:
+            print("❌ Dashboard functionality issues detected")
+        
+        # Final Summary
+        print("\n" + "=" * 70)
+        print("📊 VISUAL CHANGES VERIFICATION SUMMARY")
+        print("=" * 70)
+        print(f"Total tests run: {self.tests_run}")
+        print(f"Tests passed: {self.tests_passed}")
+        print(f"Tests failed: {self.tests_run - self.tests_passed}")
+        print(f"Success rate: {(self.tests_passed / self.tests_run * 100):.1f}%")
+        
+        # Specific verification results
+        all_critical_working = (
+            super_admin_success and 
+            core_endpoints_working and 
+            maria_success and 
+            config_success and 
+            dashboard_working
+        )
+        
+        print("\n🎯 CRITICAL FUNCTIONALITY VERIFICATION:")
+        print(f"   {'✅' if super_admin_success else '❌'} Super Admin Login")
+        print(f"   {'✅' if core_endpoints_working else '❌'} Core Super Admin Endpoints")
+        print(f"   {'✅' if maria_success else '❌'} Regular Admin Login")
+        print(f"   {'✅' if config_success else '❌'} Admin Configuration Endpoint")
+        print(f"   {'✅' if dashboard_working else '❌'} Dashboard Functionality")
+        
+        print("\n" + "=" * 70)
+        if all_critical_working:
+            print("🎉 VERIFICATION SUCCESSFUL!")
+            print("✅ Visual changes (emoji consistency + clickable logo) did NOT break backend functionality")
+            print("✅ All critical endpoints working correctly")
+            print("✅ Authentication systems intact")
+            print("✅ Dashboard and configuration systems operational")
+        else:
+            print("⚠️  VERIFICATION ISSUES DETECTED!")
+            print("❌ Some backend functionality may have been affected by the changes")
+            print("❌ Review the failed tests above for specific issues")
+        
+        return all_critical_working
+
+def main():
+    """Main function to run visual changes verification tests"""
+    tester = AuthenticationAPITester()
+    success = tester.run_visual_changes_verification_tests()
+    
+    if success:
+        print("🎉 All tests passed!")
+        return 0
+    else:
+        print("⚠️  Some tests failed!")
+        return 1
+
 if __name__ == "__main__":
     sys.exit(main())
