@@ -1964,6 +1964,243 @@ const SubirComprobante = () => {
   );
 };
 
+// Historial de Comprobantes (Super Admin) - NUEVA FUNCIONALIDAD
+const HistorialComprobantes = () => {
+  const [comprobantes, setComprobantes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState(null);
+  const [filtros, setFiltros] = useState({
+    estado: '',
+    admin_id: '',
+    limit: 20,
+    offset: 0
+  });
+  const [total, setTotal] = useState(0);
+
+  useEffect(() => {
+    fetchHistorial();
+  }, [filtros]);
+
+  const fetchHistorial = async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (filtros.estado) params.append('estado', filtros.estado);
+      if (filtros.admin_id) params.append('admin_id', filtros.admin_id);
+      params.append('limit', filtros.limit.toString());
+      params.append('offset', filtros.offset.toString());
+
+      const response = await axios.get(`${API}/superadmin/comprobantes-historial?${params}`);
+      setComprobantes(response.data.comprobantes);
+      setStats(response.data.stats);
+      setTotal(response.data.total);
+    } catch (error) {
+      console.error('Error fetching historial:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFiltroChange = (campo, valor) => {
+    setFiltros(prev => ({
+      ...prev,
+      [campo]: valor,
+      offset: 0 // Reset pagination when filtering
+    }));
+  };
+
+  const handlePaginacion = (nuevoOffset) => {
+    setFiltros(prev => ({
+      ...prev,
+      offset: nuevoOffset
+    }));
+  };
+
+  const getEstadoBadge = (estado) => {
+    const badges = {
+      'PENDIENTE': 'bg-yellow-100 text-yellow-800',
+      'CONFIRMADO': 'bg-green-100 text-green-800',
+      'RECHAZADO': 'bg-red-100 text-red-800'
+    };
+    
+    const labels = {
+      'PENDIENTE': 'Pendiente',
+      'CONFIRMADO': 'Aprobado',
+      'RECHAZADO': 'Rechazado'
+    };
+
+    return (
+      <span className={`px-2 py-1 rounded-full text-xs font-medium ${badges[estado] || 'bg-gray-100 text-gray-800'}`}>
+        {labels[estado] || estado}
+      </span>
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className="p-8">
+        <div className="text-center">Cargando historial de comprobantes...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900">Historial de Comprobantes</h1>
+        <p className="text-gray-600 mt-2">Registro completo de todos los comprobantes de pago mensualidad</p>
+      </div>
+
+      {/* Estadísticas de resumen */}
+      {stats && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          <div className="bg-blue-50 p-4 rounded-lg">
+            <h3 className="text-sm font-medium text-blue-800">Total</h3>
+            <p className="text-2xl font-bold text-blue-600">{stats.total}</p>
+          </div>
+          
+          <div className="bg-yellow-50 p-4 rounded-lg">
+            <h3 className="text-sm font-medium text-yellow-800">Pendientes</h3>
+            <p className="text-2xl font-bold text-yellow-600">{stats.pendientes}</p>
+          </div>
+          
+          <div className="bg-green-50 p-4 rounded-lg">
+            <h3 className="text-sm font-medium text-green-800">Aprobados</h3>
+            <p className="text-2xl font-bold text-green-600">{stats.aprobados}</p>
+          </div>
+          
+          <div className="bg-red-50 p-4 rounded-lg">
+            <h3 className="text-sm font-medium text-red-800">Rechazados</h3>
+            <p className="text-2xl font-bold text-red-600">{stats.rechazados}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Filtros */}
+      <div className="bg-white p-6 rounded-lg shadow mb-6">
+        <h2 className="text-lg font-semibold mb-4">Filtros</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Estado</label>
+            <select
+              value={filtros.estado}
+              onChange={(e) => handleFiltroChange('estado', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">Todos los estados</option>
+              <option value="PENDIENTE">Pendientes</option>
+              <option value="CONFIRMADO">Aprobados</option>
+              <option value="RECHAZADO">Rechazados</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Registros por página</label>
+            <select
+              value={filtros.limit}
+              onChange={(e) => handleFiltroChange('limit', parseInt(e.target.value))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+            </select>
+          </div>
+
+          <div className="flex items-end">
+            <button
+              onClick={() => setFiltros({estado: '', admin_id: '', limit: 20, offset: 0})}
+              className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md"
+            >
+              Limpiar Filtros
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Lista de comprobantes */}
+      {comprobantes.length === 0 ? (
+        <div className="bg-gray-50 p-6 rounded-lg text-center">
+          <p className="text-gray-600">No se encontraron comprobantes con los filtros aplicados.</p>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {comprobantes.map((comprobante) => (
+            <div key={comprobante.comprobante_id} className="bg-white p-6 rounded-lg shadow border">
+              <div className="flex justify-between items-start mb-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <h3 className="text-lg font-semibold text-gray-900">{comprobante.lavadero_nombre}</h3>
+                    {getEstadoBadge(comprobante.estado)}
+                  </div>
+                  <p className="text-sm text-gray-600">Admin: {comprobante.admin_nombre} ({comprobante.admin_email})</p>
+                  <p className="text-sm text-gray-500">Período: {comprobante.mes_año}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-lg font-bold text-green-600">${comprobante.monto}</p>
+                  <p className="text-sm text-gray-500">
+                    Subido: {new Date(comprobante.created_at).toLocaleDateString()}
+                  </p>
+                  {comprobante.fecha_procesamiento && (
+                    <p className="text-sm text-gray-500">
+                      Procesado: {new Date(comprobante.fecha_procesamiento).toLocaleDateString()}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Comprobante:</label>
+                <img 
+                  src={`${API}${comprobante.imagen_url}`}
+                  alt="Comprobante de pago" 
+                  className="max-w-md max-h-48 object-contain border border-gray-300 rounded"
+                  onError={(e) => {
+                    e.target.alt = 'Error al cargar imagen';
+                    e.target.className = 'text-red-500 text-sm p-4 border border-red-300 rounded bg-red-50';
+                  }}
+                />
+              </div>
+
+              {comprobante.comentario_rechazo && (
+                <div className="bg-red-50 border border-red-200 p-3 rounded">
+                  <p className="text-sm font-medium text-red-800">Motivo de rechazo:</p>
+                  <p className="text-sm text-red-700 mt-1">{comprobante.comentario_rechazo}</p>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Paginación */}
+      {total > filtros.limit && (
+        <div className="flex justify-center items-center mt-8 space-x-4">
+          <button
+            onClick={() => handlePaginacion(Math.max(0, filtros.offset - filtros.limit))}
+            disabled={filtros.offset === 0}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md disabled:opacity-50"
+          >
+            Anterior
+          </button>
+          
+          <span className="text-gray-600">
+            Página {Math.floor(filtros.offset / filtros.limit) + 1} de {Math.ceil(total / filtros.limit)}
+          </span>
+          
+          <button
+            onClick={() => handlePaginacion(filtros.offset + filtros.limit)}
+            disabled={filtros.offset + filtros.limit >= total}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md disabled:opacity-50"
+          >
+            Siguiente
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Componente para Revisar Comprobantes (Super Admin)
 const RevisarComprobantes = () => {
   const [comprobantes, setComprobantes] = useState([]);
