@@ -251,6 +251,7 @@ const Navigation = () => {
               <Link to="/superadmin/lavaderos" className="hover:text-gray-300">Gestión de Lavaderos</Link>
               <Link to="/superadmin/admins" className="hover:text-gray-300">Gestión de Admins</Link>
               <Link to="/superadmin/comprobantes" className="hover:text-gray-300">Revisar Comprobantes</Link>
+              <Link to="/superadmin/historial-comprobantes" className="hover:text-gray-300">Historial Comprobantes</Link>
             </>
           )}
           
