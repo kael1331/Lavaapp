@@ -237,7 +237,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Verificar y corregir problema de visualización de imágenes de comprobantes en dashboard Super Admin"
+    - "Probar nueva lógica de toggle lavadero que crea pago PENDIENTE al desactivar"
   stuck_tasks:
     - "Problema de routing en frontend - /superadmin/admins no muestra la página correcta"
   test_all: false
