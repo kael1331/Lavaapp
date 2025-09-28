@@ -1050,6 +1050,7 @@ async def get_comprobantes_historial(
         }},
         {"$unwind": "$lavadero_info"},
         {"$project": {
+            "_id": 0,  # Exclude MongoDB ObjectId
             "comprobante_id": "$id",
             "admin_id": "$admin_id",
             "admin_nombre": "$admin_info.nombre",
