@@ -3841,6 +3841,12 @@ function App() {
               </ProtectedRoute>
             } />
             
+            <Route path="/superadmin/configuracion" element={
+              <ProtectedRoute requiredRole="SUPER_ADMIN">
+                <ConfiguracionSuperAdmin />
+              </ProtectedRoute>
+            } />
+            
             <Route path="/superadmin/admins" element={
               <ProtectedRoute requiredRole="SUPER_ADMIN">
                 <GestionAdmins />
