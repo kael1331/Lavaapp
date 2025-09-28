@@ -249,7 +249,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Probar nueva lógica de toggle lavadero que crea pago PENDIENTE al desactivar"
+    - "Probar nuevo endpoint de historial de comprobantes /superadmin/comprobantes-historial"
   stuck_tasks:
     - "Problema de routing en frontend - /superadmin/admins no muestra la página correcta"
   test_all: false
