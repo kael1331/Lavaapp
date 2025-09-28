@@ -1894,6 +1894,41 @@ class AuthenticationAPITester:
         
         return results
 
+    def run_comprobantes_historial_tests(self):
+        """Run tests specifically for the new comprobantes historial endpoint"""
+        print("🚀 Starting Comprobantes Historial Endpoint Testing...")
+        print("=" * 60)
+        
+        # Test Super Admin login first
+        super_admin_success, super_admin_token, super_admin_user = self.test_super_admin_login()
+        
+        if super_admin_success and super_admin_token:
+            print(f"✅ Super Admin authenticated: {super_admin_user.get('email')}")
+            
+            # Test the new comprobantes historial endpoint
+            historial_results = self.test_comprobantes_historial_endpoint(super_admin_token)
+            print(f"\n📊 Comprobantes Historial Test Results: {historial_results}")
+            
+        else:
+            print("❌ Super Admin login failed - cannot test comprobantes historial endpoint")
+            return False
+        
+        # Final summary
+        print("\n" + "=" * 60)
+        print("📊 COMPROBANTES HISTORIAL TEST SUMMARY")
+        print("=" * 60)
+        print(f"Total tests run: {self.tests_run}")
+        print(f"Tests passed: {self.tests_passed}")
+        print(f"Tests failed: {self.tests_run - self.tests_passed}")
+        print(f"Success rate: {(self.tests_passed / self.tests_run * 100):.1f}%")
+        
+        if self.tests_passed == self.tests_run:
+            print("🎉 ALL COMPROBANTES HISTORIAL TESTS PASSED!")
+            return True
+        else:
+            print("⚠️  Some tests failed. Check the output above for details.")
+            return False
+
 def main():
     print("🚀 Starting Authentication API Tests")
     print("=" * 50)
