@@ -251,6 +251,12 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
       label: 'Historial Comprobantes',
       roles: ['SUPER_ADMIN']
     },
+    {
+      path: '/superadmin/configuracion',
+      icon: '⚙️',
+      label: 'Configuración Sistema',
+      roles: ['SUPER_ADMIN']
+    },
     // Admin Menu Items
     {
       path: '/admin/configuracion',
