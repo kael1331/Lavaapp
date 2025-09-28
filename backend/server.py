@@ -1277,6 +1277,12 @@ async def get_pago_pendiente(request: Request):
     if not pago_pendiente:
         return {"tiene_pago_pendiente": False}
     
+    # Obtener configuración del Super Admin para el alias bancario
+    config_superadmin = await db.configuracion_superadmin.find_one({})
+    alias_bancario = "No configurado"
+    if config_superadmin:
+        alias_bancario = config_superadmin.get("alias_bancario", "No configurado")
+    
     # Verificar si ya tiene comprobante
     comprobante = await db.comprobantes_pago_mensualidad.find_one({
         "pago_mensualidad_id": pago_pendiente["id"],
@@ -1289,6 +1295,7 @@ async def get_pago_pendiente(request: Request):
         "monto": pago_pendiente["monto"],
         "mes_año": pago_pendiente["mes_año"],
         "fecha_vencimiento": pago_pendiente["fecha_vencimiento"],
+        "alias_bancario_superadmin": alias_bancario,
         "tiene_comprobante": comprobante is not None,
         "estado_comprobante": comprobante["estado"] if comprobante else None
     }
