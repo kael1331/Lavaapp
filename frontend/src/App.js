@@ -298,7 +298,13 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
         <div className="flex items-center justify-between p-4 border-b border-gray-700">
           {!isCollapsed && (
             <div className="flex items-center space-x-2">
-              <span className="text-lg font-bold">🧺 LavApp</span>
+              <Link 
+                to={user?.rol === 'SUPER_ADMIN' ? '/superadmin-dashboard' : '/dashboard'}
+                className="text-lg font-bold text-white hover:text-blue-300 transition-colors cursor-pointer"
+                title="Ir al dashboard"
+              >
+                🚿 LavApp
+              </Link>
               <span className="text-xs bg-blue-600 px-2 py-1 rounded text-white">
                 {user?.rol === 'SUPER_ADMIN' ? 'SA' : user?.rol === 'ADMIN' ? 'A' : 'C'}
               </span>
