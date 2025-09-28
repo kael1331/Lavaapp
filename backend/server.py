@@ -1963,6 +1963,49 @@ async def delete_dia_no_laboral(dia_id: str, request: Request):
     
     return {"message": "Día no laboral eliminado exitosamente"}
 
+# Toggle estado de apertura del lavadero (Admin)
+@api_router.post("/admin/toggle-apertura")
+async def toggle_apertura_lavadero(request: Request):
+    current_user = await get_current_user(request)
+    
+    if current_user.rol != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Solo los administradores pueden cambiar el estado de apertura"
+        )
+    
+    # Buscar lavadero del admin
+    lavadero_doc = await db.lavaderos.find_one({"admin_id": current_user.id})
+    if not lavadero_doc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Lavadero no encontrado"
+        )
+    
+    # Buscar configuración del lavadero
+    config_doc = await db.configuracion_lavadero.find_one({"lavadero_id": lavadero_doc["id"]})
+    if not config_doc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Configuración del lavadero no encontrada"
+        )
+    
+    # Toggle del estado
+    nuevo_estado = not config_doc.get("esta_abierto", False)
+    
+    # Actualizar configuración
+    await db.configuracion_lavadero.update_one(
+        {"lavadero_id": lavadero_doc["id"]},
+        {"$set": {"esta_abierto": nuevo_estado}}
+    )
+    
+    return {
+        "message": f"Lavadero {'abierto' if nuevo_estado else 'cerrado'} exitosamente",
+        "esta_abierto": nuevo_estado,
+        "lavadero_nombre": lavadero_doc.get("nombre", ""),
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
 # ========== ENDPOINTS DE CONFIGURACIÓN SUPER ADMIN ==========
 
 # Obtener configuración del Super Admin
