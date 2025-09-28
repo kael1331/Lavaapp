@@ -3606,13 +3606,13 @@ const ConfiguracionLavadero = () => {
   }
 
   return (
-    <div className="p-8 max-w-4xl mx-auto">
+    <div className="p-8 max-w-6xl mx-auto">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">
           Configuración del Lavadero
         </h1>
         <p className="text-gray-600 mt-2">
-          Configura los horarios, precios y días de trabajo de tu lavadero
+          Configura horarios, precios, tipos de vehículos y ubicación de tu lavadero
         </p>
       </div>
 
@@ -3667,21 +3667,6 @@ const ConfiguracionLavadero = () => {
               </select>
             </div>
 
-            {/* Precio */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Precio del Lavado ($)
-              </label>
-              <input
-                type="number"
-                min="0"
-                step="100"
-                value={configuracion.precio_turno}
-                onChange={(e) => handleConfigChange('precio_turno', parseFloat(e.target.value))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-
             {/* Alias bancario */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -3696,21 +3681,57 @@ const ConfiguracionLavadero = () => {
               />
             </div>
           </div>
+        </div>
 
-          <button
-            onClick={handleSaveConfiguracion}
-            disabled={saving}
-            className="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md disabled:opacity-50"
-          >
-            {saving ? 'Guardando...' : 'Guardar Configuración'}
-          </button>
+        {/* Tipos de Vehículos y Precios */}
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h2 className="text-xl font-semibold mb-4">🚗 Tipos de Vehículos y Precios</h2>
+          
+          <div className="space-y-4">
+            {tiposVehiculos.map(tipo => (
+              <div key={tipo.key} className="border border-gray-200 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-2xl">{tipo.icono}</span>
+                    <label className="flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={configuracion[`servicio_${tipo.key}`]}
+                        onChange={() => handleVehiculoServiceChange(tipo.key)}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mr-2"
+                      />
+                      <span className="font-medium text-gray-900">{tipo.nombre}</span>
+                    </label>
+                  </div>
+                </div>
+                
+                {configuracion[`servicio_${tipo.key}`] && (
+                  <div>
+                    <label className="block text-sm text-gray-700 mb-1">Precio ($)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="100"
+                      value={configuracion[`precio_${tipo.key}`]}
+                      onChange={(e) => handleConfigChange(`precio_${tipo.key}`, parseFloat(e.target.value) || 0)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                )}
+                
+                {!configuracion[`servicio_${tipo.key}`] && (
+                  <p className="text-sm text-red-600">❌ Servicio deshabilitado</p>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Días Laborales */}
         <div className="bg-white p-6 rounded-lg shadow">
-          <h2 className="text-xl font-semibold mb-4">Días Laborales</h2>
+          <h2 className="text-xl font-semibold mb-4">📅 Días Laborales</h2>
           
-          <div className="space-y-3">
+          <div className="space-y-3 mb-6">
             {diasSemana.map(dia => (
               <label key={dia.id} className="flex items-center">
                 <input
@@ -3724,72 +3745,138 @@ const ConfiguracionLavadero = () => {
             ))}
           </div>
 
-          <div className="mt-6 pt-6 border-t">
-            <h3 className="text-lg font-medium mb-4">Días No Laborales Específicos</h3>
+          <button
+            onClick={handleSaveConfiguracion}
+            disabled={saving}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-md transition-colors disabled:opacity-50"
+          >
+            {saving ? 'Guardando...' : 'Guardar Configuración'}
+          </button>
+        </div>
+
+        {/* Ubicación del Lavadero */}
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h2 className="text-xl font-semibold mb-4">📍 Ubicación del Lavadero</h2>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Dirección Completa
+              </label>
+              <textarea
+                value={configuracion.direccion_completa || ''}
+                onChange={(e) => handleConfigChange('direccion_completa', e.target.value)}
+                placeholder="Ingresa la dirección de tu lavadero..."
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
             
-            {/* Agregar nuevo día */}
-            <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Fecha
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Latitud</label>
                 <input
-                  type="date"
-                  value={nuevoDiaNoLaboral.fecha}
-                  onChange={(e) => setNuevoDiaNoLaboral(prev => ({ ...prev, fecha: e.target.value }))}
-                  min={new Date().toISOString().split('T')[0]}
+                  type="number"
+                  step="0.000001"
+                  value={configuracion.latitud || ''}
+                  onChange={(e) => handleConfigChange('latitud', parseFloat(e.target.value) || null)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
-              
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Motivo (opcional)
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Longitud</label>
                 <input
-                  type="text"
-                  value={nuevoDiaNoLaboral.motivo}
-                  onChange={(e) => setNuevoDiaNoLaboral(prev => ({ ...prev, motivo: e.target.value }))}
-                  placeholder="ej: Feriado, Mantenimiento"
+                  type="number"
+                  step="0.000001"
+                  value={configuracion.longitud || ''}
+                  onChange={(e) => handleConfigChange('longitud', parseFloat(e.target.value) || null)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
-              
+            </div>
+
+            {/* Mapa placeholder - Se puede implementar Google Maps después */}
+            <div className="border border-gray-300 rounded-lg p-8 text-center bg-gray-50">
+              <div className="text-4xl mb-2">🗺️</div>
+              <p className="text-gray-600 mb-2">Selecciona la ubicación en el mapa</p>
+              <p className="text-sm text-gray-500">
+                Haz clic en el mapa para establecer la ubicación de tu lavadero
+              </p>
+              {configuracion.latitud && configuracion.longitud && (
+                <div className="mt-2 p-2 bg-green-100 rounded">
+                  <p className="text-green-800 text-sm">
+                    📍 Coordenadas: {configuracion.latitud.toFixed(6)}, {configuracion.longitud.toFixed(6)}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Días No Laborales Específicos */}
+        <div className="bg-white p-6 rounded-lg shadow lg:col-span-2">
+          <h2 className="text-xl font-semibold mb-4">🚫 Días No Laborales Específicos</h2>
+          
+          {/* Agregar nuevo día */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Fecha</label>
+              <input
+                type="date"
+                value={nuevoDiaNoLaboral.fecha}
+                onChange={(e) => setNuevoDiaNoLaboral(prev => ({ ...prev, fecha: e.target.value }))}
+                min={new Date().toISOString().split('T')[0]}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Motivo (opcional)</label>
+              <input
+                type="text"
+                value={nuevoDiaNoLaboral.motivo}
+                onChange={(e) => setNuevoDiaNoLaboral(prev => ({ ...prev, motivo: e.target.value }))}
+                placeholder="ej: Feriado, Mantenimiento"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            
+            <div className="flex items-end">
               <button
                 onClick={handleAddDiaNoLaboral}
-                className="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-md"
+                className="w-full bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-md transition-colors"
               >
                 Agregar Día No Laboral
               </button>
             </div>
-
-            {/* Lista de días no laborales */}
-            {diasNoLaborales.length > 0 && (
-              <div className="mt-4">
-                <h4 className="text-sm font-medium text-gray-700 mb-2">Días marcados:</h4>
-                <div className="space-y-2 max-h-40 overflow-y-auto">
-                  {diasNoLaborales.map(dia => (
-                    <div key={dia.id} className="flex justify-between items-center bg-gray-50 p-2 rounded">
-                      <div>
-                        <span className="text-sm font-medium">
-                          {new Date(dia.fecha).toLocaleDateString()}
-                        </span>
-                        {dia.motivo && (
-                          <span className="text-xs text-gray-500 block">{dia.motivo}</span>
-                        )}
-                      </div>
-                      <button
-                        onClick={() => handleDeleteDiaNoLaboral(dia.id)}
-                        className="text-red-600 hover:text-red-800 text-xs"
-                      >
-                        Eliminar
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
+
+          {/* Lista de días no laborales */}
+          {diasNoLaborales.length > 0 && (
+            <div>
+              <h3 className="text-lg font-medium text-gray-900 mb-3">Días marcados:</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {diasNoLaborales.map(dia => (
+                  <div key={dia.id} className="flex justify-between items-center bg-red-50 p-3 rounded border border-red-200">
+                    <div>
+                      <span className="text-sm font-medium text-red-900">
+                        {new Date(dia.fecha).toLocaleDateString()}
+                      </span>
+                      {dia.motivo && (
+                        <span className="text-xs text-red-700 block">{dia.motivo}</span>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => handleDeleteDiaNoLaboral(dia.id)}
+                      className="text-red-600 hover:text-red-800 text-sm font-medium"
+                    >
+                      Eliminar
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
