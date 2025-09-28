@@ -419,7 +419,13 @@ const Navigation = ({ toggleSidebar }) => {
               ☰
             </button>
             <div className="lg:hidden flex items-center space-x-2">
-              <span className="text-lg font-bold">🧺 LavApp</span>
+              <Link 
+                to={user?.rol === 'SUPER_ADMIN' ? '/superadmin-dashboard' : '/dashboard'}
+                className="text-lg font-bold text-white hover:text-blue-300 transition-colors cursor-pointer"
+                title="Ir al dashboard"
+              >
+                🚿 LavApp
+              </Link>
             </div>
           </div>
 
