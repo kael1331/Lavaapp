@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "Probar la nueva lógica del flujo de activación/desactivación de lavaderos y comprobantes de pago. NUEVA FUNCIONALIDAD: Modifiqué el endpoint /superadmin/toggle-lavadero/{admin_id} para que cuando se DESACTIVE un lavadero (ACTIVO → PENDIENTE_APROBACION), se cree automáticamente un nuevo pago PENDIENTE, permitiendo que el admin pueda subir un nuevo comprobante. Confirmar que el ciclo completo funciona: ACTIVO → DESACTIVAR (crea pago PENDIENTE) → ADMIN puede subir comprobante → SUPER ADMIN puede aprobar y reactivar lavadero."
+user_problem_statement: "Verificar que los cambios visuales implementados no afectaron la funcionalidad del sistema. CAMBIOS VISUALES REALIZADOS: 1) Consistencia de emoji: Cambié el emoji del logo de 🧺 a 🚿 para que coincida con la página inicial, 2) Logo clickeable: Hice que 'LavApp' sea un enlace que redirija al dashboard correspondiente según el rol del usuario, 3) Funcionalidad en sidebar colapsado y expandido: Agregué navegación tanto cuando el sidebar está expandido como colapsado. TESTING A REALIZAR: Confirmar que los cambios visuales (emoji consistency y logo clickeable) no rompieron ninguna funcionalidad del backend ni afectaron los endpoints existentes."
 
 backend:
   - task: "Crear endpoint toggle para activar/desactivar lavadero"
