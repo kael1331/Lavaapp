@@ -3142,6 +3142,12 @@ function App() {
               </ProtectedRoute>
             } />
             
+            <Route path="/superadmin/historial-comprobantes" element={
+              <ProtectedRoute requiredRole="SUPER_ADMIN">
+                <HistorialComprobantes />
+              </ProtectedRoute>
+            } />
+            
             <Route path="/superadmin/admins" element={
               <ProtectedRoute requiredRole="SUPER_ADMIN">
                 <GestionAdmins />
