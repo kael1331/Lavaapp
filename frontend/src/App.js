@@ -283,73 +283,97 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
   );
 
   return (
-    <div className={`fixed left-0 top-0 h-full bg-gray-900 text-white transition-all duration-300 z-40 ${
-      isCollapsed ? 'w-16' : 'w-64'
-    }`}>
-      {/* Header del Sidebar */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-700">
-        {!isCollapsed && (
-          <div className="flex items-center space-x-2">
-            <span className="text-lg font-bold">🧺 LavApp</span>
-          </div>
-        )}
-        <button
-          onClick={toggleSidebar}
-          className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors"
-        >
-          {isCollapsed ? '→' : '←'}
-        </button>
-      </div>
-
-      {/* Menu Items */}
-      <nav className="mt-4">
-        <ul className="space-y-2">
-          {filteredMenuItems.map((item) => {
-            const isActive = location.pathname === item.path;
-            return (
-              <li key={item.path}>
-                <Link
-                  to={item.path}
-                  className={`flex items-center px-4 py-3 text-sm transition-colors ${
-                    isActive
-                      ? 'bg-blue-600 text-white border-r-4 border-blue-400'
-                      : 'text-gray-300 hover:bg-gray-800 hover:text-white'
-                  }`}
-                  title={isCollapsed ? item.label : ''}
-                >
-                  <span className="text-lg mr-3">{item.icon}</span>
-                  {!isCollapsed && (
-                    <span className="font-medium">{item.label}</span>
-                  )}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
-
-      {/* User Info (bottom) */}
+    <>
+      {/* Overlay para móviles */}
       {!isCollapsed && (
-        <div className="absolute bottom-4 left-4 right-4">
-          <div className="bg-gray-800 rounded-lg p-3">
+        <div 
+          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
+          onClick={toggleSidebar}
+        />
+      )}
+      
+      {/* Sidebar */}
+      <div className={`fixed left-0 top-0 h-full bg-gray-900 text-white transition-all duration-300 z-40 ${
+        isCollapsed ? 'w-16' : 'w-64'
+      } ${
+        // En móvil, cuando está colapsado se oculta completamente
+        isCollapsed ? 'lg:translate-x-0 -translate-x-full lg:w-16' : 'translate-x-0'
+      }`}>
+        {/* Header del Sidebar */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-700">
+          {!isCollapsed && (
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-sm">
-                {user?.nombre?.charAt(0)?.toUpperCase() || 'U'}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white truncate">
-                  {user?.nombre || 'Usuario'}
-                </p>
-                <p className="text-xs text-gray-400 truncate">
-                  {user?.rol === 'SUPER_ADMIN' ? 'Super Admin' : 
-                   user?.rol === 'ADMIN' ? 'Administrador' : 'Cliente'}
-                </p>
+              <span className="text-lg font-bold">🧺 LavApp</span>
+              <span className="text-xs bg-blue-600 px-2 py-1 rounded text-white">
+                {user?.rol === 'SUPER_ADMIN' ? 'SA' : user?.rol === 'ADMIN' ? 'A' : 'C'}
+              </span>
+            </div>
+          )}
+          <button
+            onClick={toggleSidebar}
+            className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors"
+            title={isCollapsed ? 'Expandir menú' : 'Colapsar menú'}
+          >
+            {isCollapsed ? '→' : '←'}
+          </button>
+        </div>
+
+        {/* Menu Items */}
+        <nav className="mt-4">
+          <ul className="space-y-2">
+            {filteredMenuItems.map((item) => {
+              const isActive = location.pathname === item.path;
+              return (
+                <li key={item.path}>
+                  <Link
+                    to={item.path}
+                    onClick={() => {
+                      // En móvil, cerrar sidebar al hacer click
+                      if (window.innerWidth < 1024) {
+                        setIsCollapsed(true);
+                      }
+                    }}
+                    className={`flex items-center px-4 py-3 text-sm transition-colors ${
+                      isActive
+                        ? 'bg-blue-600 text-white border-r-4 border-blue-400'
+                        : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                    }`}
+                    title={isCollapsed ? item.label : ''}
+                  >
+                    <span className="text-lg mr-3 flex-shrink-0">{item.icon}</span>
+                    {!isCollapsed && (
+                      <span className="font-medium truncate">{item.label}</span>
+                    )}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+
+        {/* User Info (bottom) - Solo en desktop expandido */}
+        {!isCollapsed && (
+          <div className="absolute bottom-4 left-4 right-4">
+            <div className="bg-gray-800 rounded-lg p-3">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-sm flex-shrink-0">
+                  {user?.nombre?.charAt(0)?.toUpperCase() || 'U'}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-white truncate">
+                    {user?.nombre || 'Usuario'}
+                  </p>
+                  <p className="text-xs text-gray-400 truncate">
+                    {user?.rol === 'SUPER_ADMIN' ? 'Super Admin' : 
+                     user?.rol === 'ADMIN' ? 'Administrador' : 'Cliente'}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </>
   );
 };
 
