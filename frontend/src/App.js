@@ -2148,6 +2148,212 @@ const SubirComprobante = () => {
   );
 };
 
+// Componente de Perfil de Usuario
+const PerfilUsuario = () => {
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [userInfo, setUserInfo] = useState(null);
+
+  useEffect(() => {
+    fetchUserInfo();
+  }, []);
+
+  const fetchUserInfo = async () => {
+    try {
+      // Obtener información adicional del usuario si es necesario
+      setUserInfo(user);
+    } catch (error) {
+      console.error('Error fetching user info:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="p-8">
+        <div className="text-center">Cargando información del perfil...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="p-8">
+        <div className="text-center text-red-600">No se pudo cargar la información del usuario</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-8 max-w-2xl mx-auto">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900">Mi Perfil</h1>
+        <p className="text-gray-600 mt-2">Información de tu cuenta y configuraciones</p>
+      </div>
+
+      {/* Información del Usuario */}
+      <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <div className="flex items-center space-x-6 mb-6">
+          {user.picture ? (
+            <img 
+              src={user.picture} 
+              alt="Foto de perfil" 
+              className="w-20 h-20 rounded-full border-4 border-blue-100"
+            />
+          ) : (
+            <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center text-2xl font-bold text-white">
+              {user.nombre?.charAt(0)?.toUpperCase() || 'U'}
+            </div>
+          )}
+          
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">{user.nombre}</h2>
+            <p className="text-gray-600">{user.email}</p>
+            <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium mt-2 ${
+              user.rol === 'SUPER_ADMIN' 
+                ? 'bg-purple-100 text-purple-800'
+                : user.rol === 'ADMIN'
+                ? 'bg-blue-100 text-blue-800'
+                : 'bg-green-100 text-green-800'
+            }`}>
+              {user.rol === 'SUPER_ADMIN' ? 'Super Administrador' : 
+               user.rol === 'ADMIN' ? 'Administrador' : 'Cliente'}
+            </span>
+          </div>
+        </div>
+
+        {/* Detalles de la cuenta */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Información Personal</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Nombre Completo</label>
+                <p className="mt-1 text-sm text-gray-900">{user.nombre}</p>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Correo Electrónico</label>
+                <p className="mt-1 text-sm text-gray-900">{user.email}</p>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Rol en el Sistema</label>
+                <p className="mt-1 text-sm text-gray-900">
+                  {user.rol === 'SUPER_ADMIN' ? 'Super Administrador' : 
+                   user.rol === 'ADMIN' ? 'Administrador de Lavadero' : 'Cliente'}
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">ID de Usuario</label>
+                <p className="mt-1 text-sm text-gray-500 font-mono">{user.id}</p>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Información de la Cuenta</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Fecha de Registro</label>
+                <p className="mt-1 text-sm text-gray-900">
+                  {user.created_at ? new Date(user.created_at).toLocaleDateString('es-ES', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  }) : 'No disponible'}
+                </p>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Estado de la Cuenta</label>
+                <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium mt-1 ${
+                  user.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                }`}>
+                  {user.is_active ? 'Activa' : 'Inactiva'}
+                </span>
+              </div>
+
+              {user.google_id && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Método de Autenticación</label>
+                  <div className="flex items-center mt-1">
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      🔗 Conectado con Google
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Acciones de la cuenta */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Configuraciones de Cuenta</h3>
+        <div className="space-y-3">
+          <button className="w-full text-left p-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium text-gray-900">Cambiar Información Personal</p>
+                <p className="text-sm text-gray-500">Actualizar nombre y detalles de contacto</p>
+              </div>
+              <span className="text-gray-400">→</span>
+            </div>
+          </button>
+
+          {!user.google_id && (
+            <button className="w-full text-left p-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-gray-900">Cambiar Contraseña</p>
+                  <p className="text-sm text-gray-500">Actualizar tu contraseña de acceso</p>
+                </div>
+                <span className="text-gray-400">→</span>
+              </div>
+            </button>
+          )}
+
+          <button className="w-full text-left p-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium text-gray-900">Configuración de Notificaciones</p>
+                <p className="text-sm text-gray-500">Personalizar alertas y notificaciones</p>
+              </div>
+              <span className="text-gray-400">→</span>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      {/* Información adicional para Admins */}
+      {user.rol === 'ADMIN' && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mt-6">
+          <h3 className="text-lg font-semibold text-blue-900 mb-2">Información del Administrador</h3>
+          <p className="text-blue-700 text-sm">
+            Como administrador de lavadero, tienes acceso a las funciones de gestión de tu negocio, 
+            configuración de servicios y manejo de comprobantes de pago.
+          </p>
+        </div>
+      )}
+
+      {/* Información adicional para Super Admin */}
+      {user.rol === 'SUPER_ADMIN' && (
+        <div className="bg-purple-50 border border-purple-200 rounded-lg p-6 mt-6">
+          <h3 className="text-lg font-semibold text-purple-900 mb-2">Panel de Super Administrador</h3>
+          <p className="text-purple-700 text-sm">
+            Como Super Admin, tienes control total sobre el sistema, incluyendo la gestión de todos los 
+            lavaderos, administradores y la configuración global de la plataforma.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Historial de Comprobantes (Super Admin) - NUEVA FUNCIONALIDAD
 const HistorialComprobantes = () => {
   const [comprobantes, setComprobantes] = useState([]);
