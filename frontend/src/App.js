@@ -232,19 +232,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
   };
 
   const menuItems = [
-    {
-      path: '/dashboard',
-      icon: '🏠',
-      label: 'Dashboard',
-      roles: ['SUPER_ADMIN', 'ADMIN', 'CLIENTE']
-    },
     // Super Admin Menu Items
-    {
-      path: '/superadmin-dashboard',
-      icon: '👑',
-      label: 'Super Dashboard',
-      roles: ['SUPER_ADMIN']
-    },
     {
       path: '/superadmin/admins',
       icon: '👥',
@@ -275,6 +263,13 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
       icon: '💳',
       label: 'Subir Comprobante',
       roles: ['ADMIN']
+    },
+    // Cliente Menu Items (si los necesitamos en el futuro)
+    {
+      path: '/cliente/turnos',
+      icon: '📅',
+      label: 'Mis Turnos',
+      roles: ['CLIENTE']
     }
   ];
 
