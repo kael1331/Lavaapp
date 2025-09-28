@@ -215,15 +215,18 @@ backend:
 
   - task: "Probar nuevo endpoint de historial de comprobantes /superadmin/comprobantes-historial"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Implementado nuevo endpoint /superadmin/comprobantes-historial que permite ver historial completo de comprobantes (PENDIENTES, CONFIRMADOS, RECHAZADOS) con filtros y paginación. Necesita testing completo para verificar funcionalidad."
+      - working: true
+        agent: "testing"
+        comment: "🎉 NUEVO ENDPOINT COMPLETAMENTE FUNCIONAL - Probado exhaustivamente el endpoint /superadmin/comprobantes-historial según especificaciones del review request: ✅ PRUEBA 1: Endpoint básico sin parámetros funciona correctamente, devuelve estructura {comprobantes, total, stats, filters}, ✅ PRUEBA 2: Estadísticas verificadas - stats contiene total, pendientes, aprobados, rechazados con números consistentes (Total=8, Pendientes=0, Aprobados=5, Rechazados=3), ✅ PRUEBA 3: Filtros funcionan perfectamente - estado=PENDIENTE (0 resultados), estado=CONFIRMADO (5 resultados), estado=RECHAZADO (3 resultados), todos con filtrado correcto, ✅ PRUEBA 4: Paginación funciona - limit=2&offset=0 y limit=2&offset=2 sin solapamiento entre páginas, ✅ PRUEBA 5: Comparación con endpoint existente - /superadmin/comprobantes-pendientes devuelve mismo número que filtro PENDIENTE (0 comprobantes), ✅ PRUEBAS ADICIONALES: Filtros inválidos manejados correctamente, límites grandes funcionan. CORRECCIÓN APLICADA: Solucioné error 500 de serialización ObjectId agregando '_id': 0 en pipeline de agregación MongoDB. RESULTADO: 11/11 pruebas exitosas (100% success rate). El nuevo endpoint está completamente operativo y listo para producción."
 
 frontend:
   - task: "Modificar botón toggle para activar/desactivar lavaderos"
