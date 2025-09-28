@@ -1738,9 +1738,13 @@ const AdminLogin = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Si ya está logueado, redirigir al dashboard
+    // Si ya está logueado, redirigir según el rol
     if (user) {
-      navigate('/dashboard');
+      if (user.rol === 'SUPER_ADMIN') {
+        navigate('/superadmin-dashboard');
+      } else {
+        navigate('/dashboard');
+      }
     } else {
       // Cargar credenciales de testing si no está logueado
       fetchCredencialesAdmin();
@@ -1780,7 +1784,13 @@ const AdminLogin = () => {
     const result = await login(formData.email, formData.password);
     
     if (result.success) {
-      navigate('/dashboard');
+      // Redirigir según el rol del usuario
+      const userRole = result.user?.rol;
+      if (userRole === 'SUPER_ADMIN') {
+        navigate('/superadmin-dashboard');
+      } else {
+        navigate('/dashboard');
+      }
     } else {
       setError(result.error);
     }
