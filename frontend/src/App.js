@@ -2391,6 +2391,225 @@ const PerfilUsuario = () => {
   );
 };
 
+// Configuración del Super Admin
+const ConfiguracionSuperAdmin = () => {
+  const { user } = useAuth();
+  const [configuracion, setConfiguracion] = useState({
+    alias_bancario: "",
+    precio_mensualidad: 10000.0
+  });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState({ type: '', text: '' });
+
+  useEffect(() => {
+    fetchConfiguracion();
+  }, []);
+
+  const fetchConfiguracion = async () => {
+    try {
+      const response = await axios.get(`${API}/superadmin/configuracion`);
+      setConfiguracion({
+        alias_bancario: response.data.alias_bancario || "",
+        precio_mensualidad: response.data.precio_mensualidad || 10000.0
+      });
+    } catch (error) {
+      console.error('Error fetching configuracion:', error);
+      setMessage({
+        type: 'error',
+        text: 'Error al cargar la configuración'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleInputChange = (field, value) => {
+    setConfiguracion(prev => ({
+      ...prev,
+      [field]: value
+    }));
+    // Limpiar mensaje al cambiar valores
+    if (message.text) {
+      setMessage({ type: '', text: '' });
+    }
+  };
+
+  const handleSave = async () => {
+    // Validaciones del frontend
+    if (!configuracion.alias_bancario.trim()) {
+      setMessage({
+        type: 'error',
+        text: 'El alias bancario es requerido'
+      });
+      return;
+    }
+
+    const precio = parseFloat(configuracion.precio_mensualidad);
+    if (isNaN(precio) || precio <= 0) {
+      setMessage({
+        type: 'error',
+        text: 'El precio mensualidad debe ser un número válido mayor a cero'
+      });
+      return;
+    }
+
+    setSaving(true);
+    setMessage({ type: '', text: '' });
+
+    try {
+      const response = await axios.put(`${API}/superadmin/configuracion`, {
+        alias_bancario: configuracion.alias_bancario.trim(),
+        precio_mensualidad: precio
+      });
+      
+      setMessage({
+        type: 'success',
+        text: response.data.message || 'Configuración guardada exitosamente'
+      });
+      
+      // Refrescar la configuración para asegurar consistencia
+      await fetchConfiguracion();
+    } catch (error) {
+      setMessage({
+        type: 'error',
+        text: error.response?.data?.detail || 'Error al guardar la configuración'
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="p-8">
+        <div className="text-center">Cargando configuración del sistema...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-8 max-w-3xl mx-auto">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900">Configuración del Sistema</h1>
+        <p className="text-gray-600 mt-2">
+          Gestiona la configuración global del sistema de lavaderos
+        </p>
+      </div>
+
+      {/* Mensajes de respuesta */}
+      {message.text && (
+        <div className={`mb-6 p-4 rounded-lg ${
+          message.type === 'success' 
+            ? 'bg-green-100 border border-green-400 text-green-700'
+            : 'bg-red-100 border border-red-400 text-red-700'
+        }`}>
+          {message.text}
+        </div>
+      )}
+
+      {/* Formulario de configuración */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-xl font-semibold text-gray-900 mb-6">Configuración de Pagos</h2>
+        
+        <div className="space-y-6">
+          {/* Alias Bancario */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Alias Bancario para Transferencias *
+            </label>
+            <input
+              type="text"
+              value={configuracion.alias_bancario}
+              onChange={(e) => handleInputChange('alias_bancario', e.target.value)}
+              placeholder="ej: superadmin.sistema.mp"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+            <p className="mt-2 text-sm text-gray-500">
+              Este alias será usado por los administradores para realizar transferencias mensuales
+            </p>
+          </div>
+
+          {/* Precio Mensualidad */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Precio Mensualidad ($) *
+            </label>
+            <input
+              type="number"
+              min="0"
+              step="100"
+              value={configuracion.precio_mensualidad}
+              onChange={(e) => handleInputChange('precio_mensualidad', parseFloat(e.target.value) || 0)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+            <p className="mt-2 text-sm text-gray-500">
+              Monto mensual que deben pagar los administradores de lavaderos
+            </p>
+          </div>
+        </div>
+
+        {/* Vista previa */}
+        <div className="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <h3 className="font-semibold text-blue-900 mb-2">Vista Previa de la Configuración:</h3>
+          <div className="space-y-2 text-sm text-blue-800">
+            <p><span className="font-medium">Alias Bancario:</span> {configuracion.alias_bancario || 'No configurado'}</p>
+            <p><span className="font-medium">Precio Mensual:</span> ${configuracion.precio_mensualidad?.toLocaleString() || '0'}</p>
+          </div>
+        </div>
+
+        {/* Información adicional */}
+        <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+          <h3 className="font-semibold text-gray-800 mb-2">Información Importante:</h3>
+          <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
+            <li>El alias bancario será mostrado a los administradores cuando deban realizar pagos</li>
+            <li>El precio mensualidad se aplicará a todos los nuevos pagos generados</li>
+            <li>Los cambios en el precio no afectarán pagos ya generados</li>
+            <li>Asegúrate de comunicar cualquier cambio a los administradores</li>
+          </ul>
+        </div>
+
+        {/* Botón de guardado */}
+        <div className="mt-8 flex justify-end">
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors disabled:opacity-50"
+          >
+            {saving ? 'Guardando...' : 'Guardar Configuración'}
+          </button>
+        </div>
+      </div>
+
+      {/* Estadísticas del sistema */}
+      <div className="mt-8 bg-white rounded-lg shadow p-6">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Impacto de la Configuración</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="p-4 bg-green-50 rounded-lg">
+            <h3 className="font-semibold text-green-800 mb-2">Ingresos Mensuales Potenciales</h3>
+            <p className="text-2xl font-bold text-green-600">
+              ${((configuracion.precio_mensualidad || 0) * 3).toLocaleString()}
+            </p>
+            <p className="text-sm text-green-700 mt-1">
+              Basado en 3 administradores actuales
+            </p>
+          </div>
+          
+          <div className="p-4 bg-blue-50 rounded-lg">
+            <h3 className="font-semibold text-blue-800 mb-2">Configuración Actual</h3>
+            <p className="text-sm text-blue-700">
+              <span className="font-medium">Alias:</span> {configuracion.alias_bancario || 'No configurado'}
+            </p>
+            <p className="text-sm text-blue-700">
+              <span className="font-medium">Precio:</span> ${configuracion.precio_mensualidad?.toLocaleString() || '0'}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Historial de Comprobantes (Super Admin) - NUEVA FUNCIONALIDAD
 const HistorialComprobantes = () => {
   const [comprobantes, setComprobantes] = useState([]);
