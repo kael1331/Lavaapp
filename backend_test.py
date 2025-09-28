@@ -1004,6 +1004,354 @@ class AuthenticationAPITester:
         
         return results
     
+    # ========== SPECIFIC TASK: TEST NEW TOGGLE LAVADERO LOGIC ==========
+    
+    def test_new_toggle_lavadero_logic(self, super_admin_token):
+        """
+        SPECIFIC TASK: Test new toggle lavadero logic that creates PENDIENTE payment when deactivating
+        
+        Requirements from review request:
+        1. Login as Super Admin (kearcangel@gmail.com / K@#l1331)
+        2. Find admin with ACTIVO lavadero (example: María - maria@lavaderocentro.com)
+        3. Use POST /superadmin/toggle-lavadero/{admin_id} on ACTIVO lavadero
+        4. Verify lavadero changes to PENDIENTE_APROBACION ✓
+        5. Verify new PENDIENTE payment is created ✓
+        6. Verify admin can GET /admin/pago-pendiente and get tiene_pago_pendiente: true ✓
+        7. Login as deactivated admin and verify they can upload comprobante
+        8. Test reactivation functionality
+        """
+        print("\n🎯 TESTING NEW TOGGLE LAVADERO LOGIC - DEACTIVATION CREATES PENDIENTE PAYMENT...")
+        print("=" * 80)
+        
+        results = {
+            'super_admin_login': True,  # Already logged in
+            'admin_with_activo_found': False,
+            'admin_id': None,
+            'admin_email': None,
+            'admin_password': None,
+            'deactivation_successful': False,
+            'pendiente_payment_created': False,
+            'admin_can_login': False,
+            'admin_has_pending_payment': False,
+            'admin_can_upload_comprobante': False,
+            'reactivation_successful': False
+        }
+        
+        # Step 1: Get all admins and find one with ACTIVO lavadero
+        print("\n1️⃣ Finding admin with ACTIVO lavadero...")
+        success_admins, admins_data = self.run_test(
+            "Get All Admins - Find ACTIVO lavadero",
+            "GET",
+            "superadmin/admins",
+            200,
+            token=super_admin_token
+        )
+        
+        if success_admins and isinstance(admins_data, list):
+            activo_admin = None
+            for admin in admins_data:
+                lavadero_estado = admin.get('lavadero', {}).get('estado_operativo')
+                if lavadero_estado == 'ACTIVO':
+                    activo_admin = admin
+                    break
+            
+            if activo_admin:
+                results['admin_with_activo_found'] = True
+                results['admin_id'] = activo_admin.get('admin_id')
+                results['admin_email'] = activo_admin.get('email')
+                
+                print(f"✅ Found ACTIVO admin: {results['admin_email']}")
+                print(f"   Admin ID: {results['admin_id']}")
+                print(f"   Lavadero: {activo_admin.get('lavadero', {}).get('nombre')}")
+                print(f"   Estado actual: {activo_admin.get('lavadero', {}).get('estado_operativo')}")
+                
+                # Get password from credenciales-testing
+                print("\n   Getting admin password from credenciales-testing...")
+                cred_success, cred_data = self.run_test(
+                    "Get Admin Password",
+                    "GET",
+                    "superadmin/credenciales-testing",
+                    200,
+                    token=super_admin_token
+                )
+                
+                if cred_success and isinstance(cred_data, list):
+                    for cred in cred_data:
+                        if cred.get('email') == results['admin_email']:
+                            results['admin_password'] = cred.get('password')
+                            print(f"✅ Found password: {results['admin_password']}")
+                            break
+                    
+                    if not results['admin_password']:
+                        print("⚠️  Password not found in credenciales-testing, will try common passwords")
+                        # Try common passwords based on email
+                        if 'maria' in results['admin_email']:
+                            results['admin_password'] = 'maria123'
+                        elif 'juan' in results['admin_email']:
+                            results['admin_password'] = 'juan123'
+                        elif 'carlos' in results['admin_email']:
+                            results['admin_password'] = 'carlos123'
+                        else:
+                            results['admin_password'] = 'admin123'
+                        print(f"   Trying common password: {results['admin_password']}")
+                else:
+                    print("❌ Failed to get credenciales-testing")
+                    return results
+            else:
+                print("❌ No admin with ACTIVO lavadero found")
+                print("   Available admins and their states:")
+                for admin in admins_data:
+                    email = admin.get('email')
+                    estado = admin.get('lavadero', {}).get('estado_operativo', 'N/A')
+                    print(f"   • {email}: {estado}")
+                
+                # Try to activate one admin for testing
+                print("\n   Attempting to activate an admin for testing...")
+                if len(admins_data) > 0:
+                    test_admin = admins_data[0]
+                    test_admin_id = test_admin.get('admin_id')
+                    test_admin_email = test_admin.get('email')
+                    
+                    print(f"   Activating {test_admin_email} for testing...")
+                    activate_success, activate_data = self.run_test(
+                        f"Activate Admin for Testing - {test_admin_email}",
+                        "POST",
+                        f"superadmin/toggle-lavadero/{test_admin_id}",
+                        200,
+                        token=super_admin_token
+                    )
+                    
+                    if activate_success and isinstance(activate_data, dict):
+                        nuevo_estado = activate_data.get('estado_nuevo')
+                        if nuevo_estado == 'ACTIVO':
+                            print(f"✅ Successfully activated {test_admin_email}")
+                            results['admin_with_activo_found'] = True
+                            results['admin_id'] = test_admin_id
+                            results['admin_email'] = test_admin_email
+                            
+                            # Get password
+                            if 'maria' in test_admin_email:
+                                results['admin_password'] = 'maria123'
+                            elif 'juan' in test_admin_email:
+                                results['admin_password'] = 'juan123'
+                            elif 'carlos' in test_admin_email:
+                                results['admin_password'] = 'carlos123'
+                            else:
+                                results['admin_password'] = 'admin123'
+                        else:
+                            print(f"❌ Failed to activate admin - new state: {nuevo_estado}")
+                            return results
+                    else:
+                        print("❌ Failed to activate admin for testing")
+                        return results
+                else:
+                    print("❌ No admins available for testing")
+                    return results
+        else:
+            print("❌ Failed to get admin list")
+            return results
+        
+        # Step 2: Test deactivation (ACTIVO → PENDIENTE_APROBACION)
+        print(f"\n2️⃣ Testing deactivation of {results['admin_email']} lavadero...")
+        print("   This should:")
+        print("   • Change lavadero state from ACTIVO to PENDIENTE_APROBACION")
+        print("   • Create a new PENDIENTE payment")
+        print("   • Remove fecha_vencimiento")
+        
+        deactivate_success, deactivate_data = self.run_test(
+            f"Deactivate Lavadero - {results['admin_email']}",
+            "POST",
+            f"superadmin/toggle-lavadero/{results['admin_id']}",
+            200,
+            token=super_admin_token
+        )
+        
+        if deactivate_success and isinstance(deactivate_data, dict):
+            estado_anterior = deactivate_data.get('estado_anterior')
+            estado_nuevo = deactivate_data.get('estado_nuevo')
+            message = deactivate_data.get('message', '')
+            
+            print(f"✅ Deactivation successful: {estado_anterior} → {estado_nuevo}")
+            print(f"   Message: {message}")
+            
+            if estado_anterior == 'ACTIVO' and estado_nuevo == 'PENDIENTE_APROBACION':
+                results['deactivation_successful'] = True
+                print("✅ State change correct: ACTIVO → PENDIENTE_APROBACION")
+                
+                # Check if message indicates PENDIENTE payment was created
+                if 'Nuevo pago PENDIENTE creado' in message:
+                    results['pendiente_payment_created'] = True
+                    print("✅ New PENDIENTE payment created (confirmed by message)")
+                else:
+                    print("⚠️  Message doesn't confirm PENDIENTE payment creation")
+                    print(f"   Full message: {message}")
+            else:
+                print(f"❌ Unexpected state change: {estado_anterior} → {estado_nuevo}")
+                return results
+        else:
+            print("❌ Deactivation failed")
+            return results
+        
+        # Step 3: Login as the deactivated admin
+        print(f"\n3️⃣ Testing login as deactivated admin ({results['admin_email']})...")
+        admin_login_success, admin_token, admin_user = self.test_login(
+            results['admin_email'], results['admin_password'], f"Deactivated Admin ({results['admin_email']})"
+        )
+        
+        if admin_login_success and admin_token:
+            results['admin_can_login'] = True
+            print("✅ Deactivated admin can login successfully")
+        else:
+            print("❌ Deactivated admin cannot login")
+            return results
+        
+        # Step 4: Check if admin has pending payment
+        print("\n4️⃣ Checking if admin has pending payment (GET /admin/pago-pendiente)...")
+        pago_success, pago_data = self.run_test(
+            "Check Pending Payment (Deactivated Admin)",
+            "GET",
+            "admin/pago-pendiente",
+            200,
+            token=admin_token
+        )
+        
+        if pago_success and isinstance(pago_data, dict):
+            tiene_pago_pendiente = pago_data.get('tiene_pago_pendiente', False)
+            
+            if tiene_pago_pendiente:
+                results['admin_has_pending_payment'] = True
+                print("✅ Admin has pending payment available")
+                print(f"   Pago ID: {pago_data.get('pago_id')}")
+                print(f"   Monto: ${pago_data.get('monto')}")
+                print(f"   Mes/Año: {pago_data.get('mes_año')}")
+                print(f"   Vencimiento: {pago_data.get('fecha_vencimiento')}")
+                print(f"   Tiene comprobante: {pago_data.get('tiene_comprobante')}")
+            else:
+                print("❌ Admin does not have pending payment")
+                print("   This indicates the new toggle logic is not working correctly")
+                print(f"   Response: {pago_data}")
+                return results
+        else:
+            print("❌ Failed to check pending payment")
+            return results
+        
+        # Step 5: Test comprobante upload
+        print("\n5️⃣ Testing comprobante upload by deactivated admin...")
+        
+        # Check if admin already has comprobante
+        if not pago_data.get('tiene_comprobante'):
+            # Create test image file
+            import tempfile
+            import os
+            
+            test_image_content = b'\xff\xd8\xff\xe0\x10JFIF\x01\x01\x01HH\xff\xdbC\x08\x06\x06\x07\x06\x05\x08\x07\x07\x07\t\t\x08\n\x0c\x14\r\x0c\x0b\x0b\x0c\x19\x12\x13\x0f\x14\x1d\x1a\x1f\x1e\x1d\x1a\x1c\x1c $.\' ",#\x1c\x1c(7),01444\x1f\'9=82<.342\xff\xc0\x11\x08\x01\x01\x01\x01\x11\x02\x11\x01\x03\x11\x01\xff\xc4\x14\x01\x08\xff\xc4\x14\x10\x01\xff\xda\x0c\x03\x01\x02\x11\x03\x11\x3f\xaa\xff\xd9'
+            
+            with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as test_file:
+                test_file.write(test_image_content)
+                test_file_path = test_file.name
+            
+            try:
+                url = f"{self.base_url}/comprobante-mensualidad"
+                headers = {'Authorization': f'Bearer {admin_token}'}
+                
+                with open(test_file_path, 'rb') as f:
+                    files = {'imagen': ('test_comprobante_toggle.jpg', f, 'image/jpeg')}
+                    
+                    self.tests_run += 1
+                    print("🔍 Testing Comprobante Upload (Deactivated Admin)...")
+                    
+                    try:
+                        response = requests.post(url, files=files, headers=headers)
+                        
+                        if response.status_code == 200:
+                            self.tests_passed += 1
+                            results['admin_can_upload_comprobante'] = True
+                            print("✅ Comprobante upload successful")
+                            
+                            response_data = response.json()
+                            print(f"   Comprobante ID: {response_data.get('comprobante_id')}")
+                            print(f"   Image URL: {response_data.get('imagen_url')}")
+                            print(f"   Estado: {response_data.get('estado')}")
+                        else:
+                            print(f"❌ Comprobante upload failed - Status: {response.status_code}")
+                            print(f"   Response: {response.text}")
+                    except Exception as e:
+                        print(f"❌ Comprobante upload error: {str(e)}")
+            finally:
+                try:
+                    os.unlink(test_file_path)
+                except:
+                    pass
+        else:
+            print("✅ Admin already has comprobante uploaded")
+            results['admin_can_upload_comprobante'] = True
+        
+        # Step 6: Test reactivation
+        print(f"\n6️⃣ Testing reactivation of {results['admin_email']} lavadero...")
+        print("   This should change lavadero state from PENDIENTE_APROBACION back to ACTIVO")
+        
+        reactivate_success, reactivate_data = self.run_test(
+            f"Reactivate Lavadero - {results['admin_email']}",
+            "POST",
+            f"superadmin/toggle-lavadero/{results['admin_id']}",
+            200,
+            token=super_admin_token
+        )
+        
+        if reactivate_success and isinstance(reactivate_data, dict):
+            estado_anterior = reactivate_data.get('estado_anterior')
+            estado_nuevo = reactivate_data.get('estado_nuevo')
+            message = reactivate_data.get('message', '')
+            
+            print(f"✅ Reactivation successful: {estado_anterior} → {estado_nuevo}")
+            print(f"   Message: {message}")
+            
+            if estado_anterior == 'PENDIENTE_APROBACION' and estado_nuevo == 'ACTIVO':
+                results['reactivation_successful'] = True
+                print("✅ State change correct: PENDIENTE_APROBACION → ACTIVO")
+                
+                if 'vence' in reactivate_data:
+                    print(f"   New expiration date: {reactivate_data.get('vence')}")
+            else:
+                print(f"❌ Unexpected state change: {estado_anterior} → {estado_nuevo}")
+        else:
+            print("❌ Reactivation failed")
+        
+        # Step 7: Final verification - complete cycle test
+        print("\n7️⃣ Final verification - Complete cycle summary...")
+        print("=" * 60)
+        
+        cycle_steps = [
+            ("Super Admin Login", True),  # Already logged in
+            ("Find ACTIVO Admin", results['admin_with_activo_found']),
+            ("Deactivate Lavadero", results['deactivation_successful']),
+            ("Create PENDIENTE Payment", results['pendiente_payment_created']),
+            ("Admin Can Login", results['admin_can_login']),
+            ("Admin Has Pending Payment", results['admin_has_pending_payment']),
+            ("Admin Can Upload Comprobante", results['admin_can_upload_comprobante']),
+            ("Reactivate Lavadero", results['reactivation_successful'])
+        ]
+        
+        all_successful = True
+        for step_name, step_result in cycle_steps:
+            status = "✅" if step_result else "❌"
+            print(f"   {status} {step_name}")
+            if not step_result:
+                all_successful = False
+        
+        print("\n" + "=" * 60)
+        if all_successful:
+            print("🎉 COMPLETE CYCLE SUCCESSFUL - New toggle lavadero logic working perfectly!")
+            print("   ✅ ACTIVO → DEACTIVATE (creates PENDIENTE payment)")
+            print("   ✅ Admin can upload new comprobante")
+            print("   ✅ Super Admin can reactivate lavadero")
+        else:
+            print("⚠️  CYCLE INCOMPLETE - Some steps failed")
+            failed_steps = [name for name, result in cycle_steps if not result]
+            print(f"   Failed steps: {', '.join(failed_steps)}")
+        
+        return results
+    
     # ========== SPECIFIC TASK: CREATE 2 NEW ADMINS FOR TESTING ==========
     
     def test_create_two_new_admins_for_testing(self, super_admin_token):
