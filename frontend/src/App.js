@@ -216,7 +216,138 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
   return children;
 };
 
-// Navigation Component
+// Sidebar Component (Menú Lateral Colapsable)
+const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
+  const { user } = useAuth();
+  const location = useLocation();
+
+  const toggleSidebar = () => {
+    setIsCollapsed(!isCollapsed);
+  };
+
+  const menuItems = [
+    {
+      path: '/dashboard',
+      icon: '🏠',
+      label: 'Dashboard',
+      roles: ['SUPER_ADMIN', 'ADMIN', 'CLIENTE']
+    },
+    // Super Admin Menu Items
+    {
+      path: '/superadmin-dashboard',
+      icon: '👑',
+      label: 'Super Dashboard',
+      roles: ['SUPER_ADMIN']
+    },
+    {
+      path: '/superadmin/admins',
+      icon: '👥',
+      label: 'Gestión de Admins',
+      roles: ['SUPER_ADMIN']
+    },
+    {
+      path: '/superadmin/comprobantes',
+      icon: '📋',
+      label: 'Revisar Comprobantes',
+      roles: ['SUPER_ADMIN']
+    },
+    {
+      path: '/superadmin/historial-comprobantes',
+      icon: '📚',
+      label: 'Historial Comprobantes',
+      roles: ['SUPER_ADMIN']
+    },
+    // Admin Menu Items
+    {
+      path: '/admin/configuracion',
+      icon: '⚙️',
+      label: 'Configuración',
+      roles: ['ADMIN']
+    },
+    {
+      path: '/admin/comprobante-pago',
+      icon: '💳',
+      label: 'Subir Comprobante',
+      roles: ['ADMIN']
+    }
+  ];
+
+  const filteredMenuItems = menuItems.filter(item => 
+    item.roles.includes(user?.rol)
+  );
+
+  return (
+    <div className={`fixed left-0 top-0 h-full bg-gray-900 text-white transition-all duration-300 z-40 ${
+      isCollapsed ? 'w-16' : 'w-64'
+    }`}>
+      {/* Header del Sidebar */}
+      <div className="flex items-center justify-between p-4 border-b border-gray-700">
+        {!isCollapsed && (
+          <div className="flex items-center space-x-2">
+            <span className="text-lg font-bold">🧺 LavApp</span>
+          </div>
+        )}
+        <button
+          onClick={toggleSidebar}
+          className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors"
+        >
+          {isCollapsed ? '→' : '←'}
+        </button>
+      </div>
+
+      {/* Menu Items */}
+      <nav className="mt-4">
+        <ul className="space-y-2">
+          {filteredMenuItems.map((item) => {
+            const isActive = location.pathname === item.path;
+            return (
+              <li key={item.path}>
+                <Link
+                  to={item.path}
+                  className={`flex items-center px-4 py-3 text-sm transition-colors ${
+                    isActive
+                      ? 'bg-blue-600 text-white border-r-4 border-blue-400'
+                      : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                  }`}
+                  title={isCollapsed ? item.label : ''}
+                >
+                  <span className="text-lg mr-3">{item.icon}</span>
+                  {!isCollapsed && (
+                    <span className="font-medium">{item.label}</span>
+                  )}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+
+      {/* User Info (bottom) */}
+      {!isCollapsed && (
+        <div className="absolute bottom-4 left-4 right-4">
+          <div className="bg-gray-800 rounded-lg p-3">
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-sm">
+                {user?.nombre?.charAt(0)?.toUpperCase() || 'U'}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-white truncate">
+                  {user?.nombre || 'Usuario'}
+                </p>
+                <p className="text-xs text-gray-400 truncate">
+                  {user?.rol === 'SUPER_ADMIN' ? 'Super Admin' : 
+                   user?.rol === 'ADMIN' ? 'Administrador' : 'Cliente'}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Navigation Component (Solo barra superior con opciones de cuenta)
 const Navigation = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
