@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "Verificar y corregir el problema de comprobantes de pago para admins con lavaderos PENDIENTE_APROBACION. Los admins creados por Super Admin usando /superadmin/crear-admin no tenían pago mensualidad creado, por lo que no podían subir comprobantes. Verificar estado actual de pagos mensualidad, crear pagos faltantes si es necesario, y probar subida de comprobantes para admin con estado PENDIENTE (Juan: juan@lavaderonorte.com)."
+user_problem_statement: "Probar la nueva lógica del flujo de activación/desactivación de lavaderos y comprobantes de pago. NUEVA FUNCIONALIDAD: Modifiqué el endpoint /superadmin/toggle-lavadero/{admin_id} para que cuando se DESACTIVE un lavadero (ACTIVO → PENDIENTE_APROBACION), se cree automáticamente un nuevo pago PENDIENTE, permitiendo que el admin pueda subir un nuevo comprobante. Confirmar que el ciclo completo funciona: ACTIVO → DESACTIVAR (crea pago PENDIENTE) → ADMIN puede subir comprobante → SUPER ADMIN puede aprobar y reactivar lavadero."
 
 backend:
   - task: "Crear endpoint toggle para activar/desactivar lavadero"
