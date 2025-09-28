@@ -1943,6 +1943,45 @@ def main():
     else:
         print("⚠️  Cannot test Super Admin blocking - Super Admin login failed")
     
+    # SPECIFIC TASK: Test NEW TOGGLE LAVADERO LOGIC (MAIN FOCUS FROM REVIEW REQUEST)
+    print("\n📋 SPECIFIC TASK: NEW TOGGLE LAVADERO LOGIC - DEACTIVATION CREATES PENDIENTE PAYMENT")
+    print("🎯 Task: Test new logic where deactivating ACTIVO lavadero creates PENDIENTE payment")
+    
+    if super_admin_success and super_admin_token:
+        toggle_results = tester.test_new_toggle_lavadero_logic(super_admin_token)
+        
+        # Summary of toggle testing results
+        print("\n📊 NEW TOGGLE LOGIC TESTING SUMMARY:")
+        print("=" * 60)
+        print(f"✅ Admin with ACTIVO Found: {toggle_results['admin_with_activo_found']}")
+        print(f"✅ Deactivation Successful: {toggle_results['deactivation_successful']}")
+        print(f"✅ PENDIENTE Payment Created: {toggle_results['pendiente_payment_created']}")
+        print(f"✅ Admin Can Login: {toggle_results['admin_can_login']}")
+        print(f"✅ Admin Has Pending Payment: {toggle_results['admin_has_pending_payment']}")
+        print(f"✅ Admin Can Upload Comprobante: {toggle_results['admin_can_upload_comprobante']}")
+        print(f"✅ Reactivation Successful: {toggle_results['reactivation_successful']}")
+        
+        # Calculate toggle test success rate
+        toggle_checks = [
+            toggle_results['admin_with_activo_found'],
+            toggle_results['deactivation_successful'],
+            toggle_results['pendiente_payment_created'],
+            toggle_results['admin_can_login'],
+            toggle_results['admin_has_pending_payment'],
+            toggle_results['admin_can_upload_comprobante'],
+            toggle_results['reactivation_successful']
+        ]
+        
+        toggle_success_rate = sum(toggle_checks) / len(toggle_checks) * 100
+        print(f"\n🎯 NEW TOGGLE LOGIC SUCCESS RATE: {toggle_success_rate:.1f}% ({sum(toggle_checks)}/{len(toggle_checks)})")
+        
+        if toggle_success_rate >= 85:
+            print("🎉 NEW TOGGLE LAVADERO LOGIC IS WORKING CORRECTLY!")
+        else:
+            print("⚠️  NEW TOGGLE LAVADERO LOGIC NEEDS ATTENTION")
+    else:
+        print("❌ Cannot test toggle logic - Super Admin login failed")
+    
     # SPECIFIC TASK: Test payment voucher functionality for PENDIENTE admins
     print("\n📋 SPECIFIC TASK: PAYMENT VOUCHER FUNCTIONALITY FOR PENDIENTE ADMINS")
     print("🎯 Task: Verify and test payment voucher upload for admins with PENDIENTE_APROBACION status")
