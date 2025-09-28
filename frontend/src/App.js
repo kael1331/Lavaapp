@@ -656,6 +656,14 @@ const SuperAdminDashboard = () => {
             <div className="text-sm opacity-90">Aprobar pagos mensuales</div>
           </Link>
           
+          <Link 
+            to="/superadmin/historial-comprobantes" 
+            className="bg-purple-600 hover:bg-purple-700 text-white p-4 rounded-lg text-center transition-colors"
+          >
+            <div className="text-lg font-semibold">Historial de Comprobantes</div>
+            <div className="text-sm opacity-90">Ver todos los comprobantes</div>
+          </Link>
+          
           <div className="bg-gray-600 hover:bg-gray-700 text-white p-4 rounded-lg text-center transition-colors cursor-pointer">
             <div className="text-lg font-semibold">Configuración</div>
             <div className="text-sm opacity-90">Precios y configuración global</div>
