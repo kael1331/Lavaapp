@@ -240,6 +240,18 @@ backend:
         agent: "testing"
         comment: "🎉 NUEVO ENDPOINT COMPLETAMENTE FUNCIONAL - Probado exhaustivamente el endpoint /superadmin/comprobantes-historial según especificaciones del review request: ✅ PRUEBA 1: Endpoint básico sin parámetros funciona correctamente, devuelve estructura {comprobantes, total, stats, filters}, ✅ PRUEBA 2: Estadísticas verificadas - stats contiene total, pendientes, aprobados, rechazados con números consistentes (Total=8, Pendientes=0, Aprobados=5, Rechazados=3), ✅ PRUEBA 3: Filtros funcionan perfectamente - estado=PENDIENTE (0 resultados), estado=CONFIRMADO (5 resultados), estado=RECHAZADO (3 resultados), todos con filtrado correcto, ✅ PRUEBA 4: Paginación funciona - limit=2&offset=0 y limit=2&offset=2 sin solapamiento entre páginas, ✅ PRUEBA 5: Comparación con endpoint existente - /superadmin/comprobantes-pendientes devuelve mismo número que filtro PENDIENTE (0 comprobantes), ✅ PRUEBAS ADICIONALES: Filtros inválidos manejados correctamente, límites grandes funcionan. CORRECCIÓN APLICADA: Solucioné error 500 de serialización ObjectId agregando '_id': 0 en pipeline de agregación MongoDB. RESULTADO: 11/11 pruebas exitosas (100% success rate). El nuevo endpoint está completamente operativo y listo para producción."
 
+  - task: "Implementar endpoints de configuración del Super Admin"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "🎉 NUEVA FUNCIONALIDAD DE CONFIGURACIÓN SUPER ADMIN COMPLETAMENTE FUNCIONAL - Probé exhaustivamente los nuevos endpoints según especificaciones del review request: ✅ PRUEBA 1: GET /superadmin/configuracion funciona correctamente, obtiene configuración existente con estructura {id, alias_bancario, precio_mensualidad, created_at}, ✅ PRUEBA 2: PUT /superadmin/configuracion funciona perfectamente con datos válidos (alias_bancario: 'super.admin.sistema.mp', precio_mensualidad: 15000.0), devuelve mensaje de confirmación exitoso, ✅ PRUEBA 3: Todas las validaciones funcionan correctamente - alias vacío (400), precio negativo (400), precio cero (400), precio no numérico (400), campos faltantes (400), todas con mensajes de error apropiados, ✅ PRUEBA 4: Persistencia verificada - cambios se guardan correctamente en base de datos, GET posterior confirma valores actualizados, ✅ PRUEBA 5: Autorización funciona perfectamente - Super Admin tiene acceso completo, admin regular recibe 403 Forbidden en ambos endpoints. CORRECCIÓN APLICADA: Solucioné error 500 de serialización ObjectId en GET endpoint removiendo '_id' del documento MongoDB. RESULTADO: 13/13 pruebas exitosas (100% success rate). Los endpoints de configuración están completamente operativos y listos para producción."
+
 frontend:
   - task: "Modificar botón toggle para activar/desactivar lavaderos"
     implemented: true
