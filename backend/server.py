@@ -1526,7 +1526,32 @@ async def toggle_lavadero_estado(admin_id: str, request: Request):
                 "fecha_vencimiento": ""
             }
         }
-        message = "Lavadero desactivado - cambiado a estado pendiente"
+        message = "Lavadero desactivado - admin debe subir nuevo comprobante para reactivación"
+        
+        # Crear nuevo pago PENDIENTE para que el admin pueda subir comprobante
+        config_super = await db.configuracion_superadmin.find_one({})
+        if config_super:
+            # Verificar si ya existe un pago PENDIENTE para este admin en este mes
+            mes_actual = datetime.now().strftime("%Y-%m")
+            pago_pendiente_existente = await db.pagos_mensualidad.find_one({
+                "admin_id": admin_id,
+                "mes_año": mes_actual,
+                "estado": EstadoPago.PENDIENTE
+            })
+            
+            if not pago_pendiente_existente:
+                # Crear nuevo pago PENDIENTE
+                fecha_vencimiento_pendiente = datetime.now(timezone.utc) + timedelta(days=30)
+                nuevo_pago = PagoMensualidad(
+                    admin_id=admin_id,
+                    lavadero_id=lavadero_doc["id"],
+                    monto=config_super.get("precio_mensualidad", 10000.0),
+                    mes_año=mes_actual,
+                    estado=EstadoPago.PENDIENTE,
+                    fecha_vencimiento=fecha_vencimiento_pendiente
+                )
+                await db.pagos_mensualidad.insert_one(nuevo_pago.dict())
+                message += f" - Nuevo pago PENDIENTE creado (${nuevo_pago.monto})"
         
     else:
         # Activar: cambiar a ACTIVO
