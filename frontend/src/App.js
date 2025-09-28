@@ -3437,7 +3437,19 @@ const ConfiguracionLavadero = () => {
     duracion_turno_minutos: 60,
     dias_laborales: [1, 2, 3, 4, 5], // Lunes a Viernes
     alias_bancario: "lavadero.alias.mp",
-    precio_turno: 5000.0
+    precio_turno: 5000.0,
+    // Nuevos campos para tipos de vehículos
+    servicio_motos: true,
+    servicio_autos: true,
+    servicio_camionetas: true,
+    precio_motos: 3000.0,
+    precio_autos: 5000.0,
+    precio_camionetas: 8000.0,
+    // Ubicación
+    latitud: null,
+    longitud: null,
+    direccion_completa: "",
+    esta_abierto: false
   });
   const [diasNoLaborales, setDiasNoLaborales] = useState([]);
   const [nuevoDiaNoLaboral, setNuevoDiaNoLaboral] = useState({
@@ -3446,6 +3458,7 @@ const ConfiguracionLavadero = () => {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [mapCenter, setMapCenter] = useState({ lat: -34.6118, lng: -58.3960 }); // Buenos Aires por defecto
 
   const diasSemana = [
     { id: 1, nombre: "Lunes" },
@@ -3457,6 +3470,12 @@ const ConfiguracionLavadero = () => {
     { id: 7, nombre: "Domingo" }
   ];
 
+  const tiposVehiculos = [
+    { key: 'motos', nombre: 'Motos', icono: '🏍️' },
+    { key: 'autos', nombre: 'Autos', icono: '🚗' },
+    { key: 'camionetas', nombre: 'Camionetas', icono: '🚙' }
+  ];
+
   useEffect(() => {
     fetchConfiguracion();
     fetchDiasNoLaborales();
@@ -3466,6 +3485,11 @@ const ConfiguracionLavadero = () => {
     try {
       const response = await axios.get(`${API}/admin/configuracion`);
       setConfiguracion(response.data);
+      
+      // Si hay coordenadas, actualizar el centro del mapa
+      if (response.data.latitud && response.data.longitud) {
+        setMapCenter({ lat: response.data.latitud, lng: response.data.longitud });
+      }
     } catch (error) {
       console.error('Error fetching configuracion:', error);
       // Si no hay configuración, usar valores por defecto
@@ -3490,6 +3514,14 @@ const ConfiguracionLavadero = () => {
     }));
   };
 
+  const handleVehiculoServiceChange = (tipo) => {
+    const serviceField = `servicio_${tipo}`;
+    setConfiguracion(prev => ({
+      ...prev,
+      [serviceField]: !prev[serviceField]
+    }));
+  };
+
   const handleDiaLaboralChange = (dia) => {
     setConfiguracion(prev => ({
       ...prev,
@@ -3497,6 +3529,32 @@ const ConfiguracionLavadero = () => {
         ? prev.dias_laborales.filter(d => d !== dia)
         : [...prev.dias_laborales, dia].sort()
     }));
+  };
+
+  const handleMapClick = (event) => {
+    const lat = event.latLng.lat();
+    const lng = event.latLng.lng();
+    
+    setConfiguracion(prev => ({
+      ...prev,
+      latitud: lat,
+      longitud: lng
+    }));
+    
+    setMapCenter({ lat, lng });
+    
+    // Obtener dirección usando geocoding reverso (opcional)
+    if (window.google && window.google.maps) {
+      const geocoder = new window.google.maps.Geocoder();
+      geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+        if (status === 'OK' && results[0]) {
+          setConfiguracion(prev => ({
+            ...prev,
+            direccion_completa: results[0].formatted_address
+          }));
+        }
+      });
+    }
   };
 
   const handleSaveConfiguracion = async () => {
