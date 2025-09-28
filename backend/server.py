@@ -204,6 +204,17 @@ class ConfiguracionLavaderoCreate(BaseModel):
     dias_laborales: List[int]
     alias_bancario: str
     precio_turno: float
+    # Nuevos campos para tipos de vehículos
+    servicio_motos: bool = True
+    servicio_autos: bool = True
+    servicio_camionetas: bool = True
+    precio_motos: float = 3000.0
+    precio_autos: float = 5000.0
+    precio_camionetas: float = 8000.0
+    # Ubicación del lavadero
+    latitud: Optional[float] = None
+    longitud: Optional[float] = None
+    direccion_completa: Optional[str] = None
 
 # Día No laboral
 class DiaNoLaboral(BaseModel):
