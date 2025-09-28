@@ -2090,10 +2090,28 @@ const SubirComprobante = () => {
             <span className="ml-2 text-blue-900">{pagoPendiente.mes_año}</span>
           </div>
         </div>
+        
+        {/* Información de transferencia */}
+        <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded">
+          <h3 className="font-semibold text-green-800 mb-2">🏦 Datos para la Transferencia</h3>
+          <div className="space-y-2 text-sm">
+            <div className="flex flex-col sm:flex-row sm:justify-between">
+              <span className="font-medium text-green-700">Alias Bancario:</span>
+              <span className="text-green-900 font-bold text-lg bg-green-100 px-3 py-1 rounded font-mono">
+                {pagoPendiente.alias_bancario_superadmin}
+              </span>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:justify-between">
+              <span className="font-medium text-green-700">Monto Exacto:</span>
+              <span className="text-green-900 font-bold text-lg">${pagoPendiente.monto}</span>
+            </div>
+          </div>
+        </div>
+        
         <div className="mt-4 p-3 bg-blue-100 rounded">
           <p className="text-sm text-blue-800">
-            <strong>Instrucciones:</strong> Realiza la transferencia por el monto exacto al alias bancario del Super Admin 
-            y luego sube el comprobante de la transferencia aquí.
+            <strong>Instrucciones:</strong> Realiza la transferencia por el monto exacto <strong>${pagoPendiente.monto}</strong> al alias bancario 
+            <strong> {pagoPendiente.alias_bancario_superadmin}</strong> y luego sube el comprobante de la transferencia aquí.
           </p>
         </div>
       </div>
