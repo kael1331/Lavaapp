@@ -310,6 +310,18 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
               </span>
             </div>
           )}
+          
+          {/* Logo when collapsed */}
+          {isCollapsed && (
+            <Link 
+              to={user?.rol === 'SUPER_ADMIN' ? '/superadmin-dashboard' : '/dashboard'}
+              className="text-lg hover:text-blue-300 transition-colors cursor-pointer"
+              title="Ir al dashboard"
+            >
+              🚿
+            </Link>
+          )}
+          
           <button
             onClick={toggleSidebar}
             className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors"
