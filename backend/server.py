@@ -1839,7 +1839,18 @@ async def update_configuracion_lavadero(config_data: ConfiguracionLavaderoCreate
             "duracion_turno_minutos": config_data.duracion_turno_minutos,
             "dias_laborales": config_data.dias_laborales,
             "alias_bancario": config_data.alias_bancario,
-            "precio_turno": config_data.precio_turno
+            "precio_turno": config_data.precio_turno,
+            # Nuevos campos para tipos de vehículos
+            "servicio_motos": config_data.servicio_motos,
+            "servicio_autos": config_data.servicio_autos,
+            "servicio_camionetas": config_data.servicio_camionetas,
+            "precio_motos": config_data.precio_motos,
+            "precio_autos": config_data.precio_autos,
+            "precio_camionetas": config_data.precio_camionetas,
+            # Ubicación del lavadero
+            "latitud": config_data.latitud,
+            "longitud": config_data.longitud,
+            "direccion_completa": config_data.direccion_completa
         }
     }
     
