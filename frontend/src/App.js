@@ -3335,7 +3335,11 @@ function App() {
                 <GestionAdmins />
               </ProtectedRoute>
             } />
-          </Routes>
+                  </Routes>
+                </div>
+              </>
+            )}
+          </AuthConsumer>
         </div>
       </BrowserRouter>
     </AuthProvider>
