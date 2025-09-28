@@ -251,8 +251,7 @@ metadata:
   run_ui: false
 
 test_plan:
-  current_focus:
-    - "Probar nuevo endpoint de historial de comprobantes /superadmin/comprobantes-historial"
+  current_focus: []
   stuck_tasks:
     - "Problema de routing en frontend - /superadmin/admins no muestra la página correcta"
   test_all: false
