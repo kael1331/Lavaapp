@@ -348,82 +348,101 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
 };
 
 // Navigation Component (Solo barra superior con opciones de cuenta)
-const Navigation = () => {
+const Navigation = ({ toggleSidebar }) => {
   const { user, logout } = useAuth();
-  const navigate = useNavigate();
-  const location = window.location;
 
-  const handleLogout = () => {
-    logout();
-    // Redirigir según el tipo de usuario
-    if (user.rol === 'SUPER_ADMIN' || user.rol === 'ADMIN') {
-      navigate('/admin-login');
-    } else if (user.rol === 'CLIENTE') {
-      navigate('/login'); // Clientes van al login de clientes
-    } else {
-      navigate('/'); // Fallback a página principal
+  const handleLogout = async () => {
+    try {
+      await logout();
+      
+      // Redirection logic based on role
+      const isClientLogout = sessionStorage.getItem('client_logout');
+      
+      if (user?.rol === 'SUPER_ADMIN' || user?.rol === 'ADMIN') {
+        window.location.href = '/admin-login';
+      } else {
+        if (isClientLogout) {
+          sessionStorage.removeItem('client_logout');
+          window.location.href = '/login';
+        } else {
+          window.location.href = '/login';
+        }
+      }
+    } catch (error) {
+      console.error('Error durante el logout:', error);
     }
   };
 
-  // No mostrar navegación en página principal, login de lavaderos, o login de admins
-  if (!user || location.pathname === '/' || location.pathname.includes('/lavadero/') || location.pathname === '/admin-login') {
-    return null;
-  }
+  if (!user) return null;
 
   return (
-    <nav className="bg-gray-800 text-white p-4">
-      <div className="container mx-auto flex justify-between items-center">
-        <div className="flex space-x-4">
-          <Link to="/dashboard" className="hover:text-gray-300">Dashboard</Link>
-          <Link to="/perfil" className="hover:text-gray-300">Mi Perfil</Link>
-          
-          {user.rol === 'SUPER_ADMIN' && (
-            <>
-              <Link to="/superadmin/lavaderos" className="hover:text-gray-300">Gestión de Lavaderos</Link>
-              <Link to="/superadmin/admins" className="hover:text-gray-300">Gestión de Admins</Link>
-              <Link to="/superadmin/comprobantes" className="hover:text-gray-300">Revisar Comprobantes</Link>
-              <Link to="/superadmin/historial-comprobantes" className="hover:text-gray-300">Historial Comprobantes</Link>
-            </>
-          )}
-          
-          {user.rol === 'ADMIN' && (
-            <>
-              <Link to="/admin/comprobante-pago" className="hover:text-gray-300">Subir Comprobante</Link>
-              <Link to="/admin/configuracion" className="hover:text-gray-300">Configuración</Link>
-              <Link to="/admin/turnos" className="hover:text-gray-300">Gestión de Turnos</Link>
-            </>
-          )}
-          
-          {user.rol === 'CLIENTE' && (
-            <>
-              <Link to="/cliente/turnos" className="hover:text-gray-300">Mis Turnos</Link>
-              <Link to="/cliente/reservar" className="hover:text-gray-300">Reservar Turno</Link>
-            </>
-          )}
-        </div>
-        
-        <div className="flex items-center space-x-4">
-          {user.picture && (
-            <img 
-              src={user.picture} 
-              alt="Foto de perfil" 
-              className="w-8 h-8 rounded-full"
-            />
-          )}
-          <span className="text-sm">
-            {user.nombre} ({user.rol})
-            {user.google_id && (
-              <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                Google
-              </span>
-            )}
-          </span>
-          <button 
-            onClick={handleLogout}
-            className="bg-red-500 hover:bg-red-600 px-3 py-1 rounded text-sm"
-          >
-            Cerrar Sesión
-          </button>
+    <nav className="bg-blue-600 text-white shadow-lg fixed top-0 right-0 left-0 z-30">
+      <div className="px-4">
+        <div className="flex justify-between items-center h-16">
+          {/* Logo/Brand y botón de menú en mobile */}
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={toggleSidebar}
+              className="lg:hidden p-2 rounded-lg bg-blue-700 hover:bg-blue-800 transition-colors"
+            >
+              ☰
+            </button>
+            <div className="lg:hidden flex items-center space-x-2">
+              <span className="text-lg font-bold">🧺 LavApp</span>
+            </div>
+          </div>
+
+          {/* User Account Options */}
+          <div className="flex items-center space-x-4">
+            {/* User Info */}
+            <div className="flex items-center space-x-3">
+              <div className="hidden sm:block text-right">
+                <p className="text-sm font-medium">{user.nombre}</p>
+                <p className="text-xs text-blue-200">
+                  {user.rol === 'SUPER_ADMIN' ? 'Super Admin' : 
+                   user.rol === 'ADMIN' ? 'Administrador' : 'Cliente'}
+                </p>
+              </div>
+              <div className="w-8 h-8 bg-blue-800 rounded-full flex items-center justify-center">
+                {user.nombre?.charAt(0)?.toUpperCase() || 'U'}
+              </div>
+            </div>
+
+            {/* Dropdown Menu */}
+            <div className="relative group">
+              <button className="p-2 rounded-lg bg-blue-700 hover:bg-blue-800 transition-colors">
+                ⋮
+              </button>
+              
+              {/* Dropdown Content */}
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all duration-200">
+                <div className="px-4 py-2 border-b border-gray-200">
+                  <p className="text-sm font-medium text-gray-900">{user.nombre}</p>
+                  <p className="text-xs text-gray-500">{user.email}</p>
+                </div>
+                
+                <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2">
+                  <span>👤</span>
+                  <span>Mi Perfil</span>
+                </button>
+                
+                <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2">
+                  <span>⚙️</span>
+                  <span>Configuración</span>
+                </button>
+                
+                <hr className="my-1" />
+                
+                <button 
+                  onClick={handleLogout}
+                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2"
+                >
+                  <span>🚪</span>
+                  <span>Cerrar Sesión</span>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </nav>
