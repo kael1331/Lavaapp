@@ -3255,11 +3255,25 @@ const ConfiguracionLavadero = () => {
 
 // Main App Component
 function App() {
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true); // Por defecto colapsado en móvil
 
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
   };
+
+  // Colapsar sidebar automáticamente en móvil
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1024) {
+        setIsSidebarCollapsed(true);
+      }
+    };
+
+    handleResize(); // Check initial size
+    window.addEventListener('resize', handleResize);
+    
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   return (
     <AuthProvider>
@@ -3282,7 +3296,8 @@ function App() {
                 <div className={`${
                   user ? 
                     `transition-all duration-300 pt-16 ${
-                      isSidebarCollapsed ? 'ml-16' : 'ml-64'
+                      // En desktop: ml-16 o ml-64, en móvil: ml-0
+                      isSidebarCollapsed ? 'lg:ml-16 ml-0' : 'lg:ml-64 ml-0'
                     }` 
                     : ''
                 }`}>
