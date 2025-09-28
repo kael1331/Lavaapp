@@ -3513,6 +3513,12 @@ function App() {
             <Route path="/lavadero/:lavaderoId/login" element={<LavaderoLogin />} />
             
             {/* Login para administradores */}
+            <Route path="/perfil" element={
+              <ProtectedRoute>
+                <PerfilUsuario />
+              </ProtectedRoute>
+            } />
+            
             <Route path="/admin-login" element={<AdminLogin />} />
             
             {/* Rutas antiguas (mantenidas para compatibilidad) */}
