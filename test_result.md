@@ -201,6 +201,18 @@ backend:
         agent: "testing"
         comment: "✅ PROBLEMA RESUELTO COMPLETAMENTE - CORRECCIÓN APLICADA: Moví la definición del endpoint @api_router.get('/uploads/comprobantes/{filename}') ANTES de la línea app.include_router(api_router) para que se registre correctamente. VERIFICACIÓN EXHAUSTIVA: ✅ PRUEBA 1: GET /api/uploads/comprobantes/comprobante_6befb2b5-5fce-49c6-94cc-07a466934484_995cf9f6-2fb7-4b8d-bc1c-38419da2faee.jpg devuelve 200 OK con Content-Type: image/jpeg, ✅ PRUEBA 2: GET /api/uploads/comprobantes/comprobante_6befb2b5-5fce-49c6-94cc-07a466934484_2899fc71-1c9f-467e-8adb-8e06522263dd.jpg devuelve 200 OK con Content-Type: image/jpeg, ✅ PRUEBA 3: GET /superadmin/comprobantes-pendientes devuelve URLs correctas formato '/uploads/comprobantes/filename', ✅ PRUEBA 4: Construcción URL frontend ${API}${imagen_url} funciona perfectamente, ✅ PRUEBA 5: Archivos físicos accesibles (687KB y 169 bytes respectivamente). RESULTADO: 6/6 pruebas exitosas (100% success rate). Las imágenes de comprobantes ahora se visualizan correctamente en el dashboard del Super Admin."
 
+  - task: "Probar nueva lógica de toggle lavadero que crea pago PENDIENTE al desactivar"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "🎯 NUEVA FUNCIONALIDAD PROBADA EXITOSAMENTE - CICLO COMPLETO FUNCIONAL (85.7% success rate): ✅ PRUEBA 1: Encontrado admin con lavadero ACTIVO (Juan - juan@lavaderonorte.com), ✅ PRUEBA 2: Desactivación exitosa ACTIVO → PENDIENTE_APROBACION usando POST /superadmin/toggle-lavadero/{admin_id}, ✅ PRUEBA 3: Admin puede hacer login después de desactivación, ✅ PRUEBA 4: GET /admin/pago-pendiente devuelve tiene_pago_pendiente: true (pago PENDIENTE creado automáticamente), ✅ PRUEBA 5: Admin puede subir comprobante exitosamente con multipart/form-data, ✅ PRUEBA 6: Reactivación exitosa PENDIENTE_APROBACION → ACTIVO. OBJETIVO CUMPLIDO: El ciclo completo funciona perfectamente - ACTIVO → DESACTIVAR (crea pago PENDIENTE) → ADMIN puede subir nuevo comprobante → SUPER ADMIN puede reactivar lavadero. ÚNICA OBSERVACIÓN MENOR: El mensaje de respuesta no dice explícitamente 'Nuevo pago PENDIENTE creado' pero la funcionalidad trabaja correctamente."
+
 frontend:
   - task: "Modificar botón toggle para activar/desactivar lavaderos"
     implemented: true
