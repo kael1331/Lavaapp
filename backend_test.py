@@ -2966,10 +2966,71 @@ def main():
         print("⚠️  Some tests failed!")
         return 1
 
-def main():
-    """Main function to run visual changes verification tests"""
+def run_super_admin_configuration_tests():
+    """Run tests specifically for the new Super Admin configuration endpoints"""
+    print("🚀 Starting Super Admin Configuration Testing...")
+    print("=" * 70)
+    print("OBJECTIVE: Test new Super Admin configuration functionality")
+    print("ENDPOINTS: GET/PUT /superadmin/configuracion")
+    print("=" * 70)
+    
     tester = AuthenticationAPITester()
-    success = tester.run_visual_changes_verification_tests()
+    
+    # Test Super Admin login first
+    super_admin_success, super_admin_token, super_admin_user = tester.test_super_admin_login()
+    
+    if super_admin_success and super_admin_token:
+        print(f"✅ Super Admin authenticated: {super_admin_user.get('email')}")
+        
+        # Test the new Super Admin configuration endpoints
+        config_results = tester.test_super_admin_configuration_endpoints(super_admin_token)
+        print(f"\n📊 Super Admin Configuration Test Results: {config_results}")
+        
+    else:
+        print("❌ Super Admin login failed - cannot test configuration endpoints")
+        return False
+    
+    # Final summary
+    print("\n" + "=" * 70)
+    print("📊 SUPER ADMIN CONFIGURATION TEST SUMMARY")
+    print("=" * 70)
+    print(f"Total tests run: {tester.tests_run}")
+    print(f"Tests passed: {tester.tests_passed}")
+    print(f"Tests failed: {tester.tests_run - tester.tests_passed}")
+    print(f"Success rate: {(tester.tests_passed / tester.tests_run * 100):.1f}%")
+    
+    # Check if all critical tests passed
+    critical_tests = [
+        config_results['get_config_works'],
+        config_results['put_config_works'],
+        config_results['validations_work'],
+        config_results['persistence_works'],
+        config_results['authorization_works']
+    ]
+    
+    all_critical_passed = all(critical_tests)
+    
+    if all_critical_passed:
+        print("🎉 ALL SUPER ADMIN CONFIGURATION TESTS PASSED!")
+        print("✅ Configuration endpoints working correctly")
+        print("✅ All validations implemented properly")
+        print("✅ Data persistence working")
+        print("✅ Authorization security working")
+        return True
+    else:
+        print("⚠️  SOME CRITICAL TESTS FAILED!")
+        failed_tests = []
+        if not config_results['get_config_works']: failed_tests.append("GET configuration")
+        if not config_results['put_config_works']: failed_tests.append("PUT configuration")
+        if not config_results['validations_work']: failed_tests.append("Input validations")
+        if not config_results['persistence_works']: failed_tests.append("Data persistence")
+        if not config_results['authorization_works']: failed_tests.append("Authorization")
+        print(f"❌ Failed tests: {', '.join(failed_tests)}")
+        return False
+
+def main():
+    """Main function to run Super Admin configuration tests"""
+    success = run_super_admin_configuration_tests()
     
     if success:
         print("🎉 All tests passed!")
