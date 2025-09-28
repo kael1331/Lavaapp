@@ -182,6 +182,19 @@ class ConfiguracionLavadero(BaseModel):
     dias_laborales: List[int]  # [1,2,3,4,5] (1=Lunes, 7=Domingo)
     alias_bancario: str
     precio_turno: float
+    # Nuevos campos para tipos de vehículos
+    servicio_motos: bool = True
+    servicio_autos: bool = True
+    servicio_camionetas: bool = True
+    precio_motos: float = 3000.0
+    precio_autos: float = 5000.0
+    precio_camionetas: float = 8000.0
+    # Ubicación del lavadero
+    latitud: Optional[float] = None
+    longitud: Optional[float] = None
+    direccion_completa: Optional[str] = None
+    # Estado de apertura en tiempo real
+    esta_abierto: bool = False
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class ConfiguracionLavaderoCreate(BaseModel):
