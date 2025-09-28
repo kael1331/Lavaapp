@@ -3232,6 +3232,7 @@ def run_bank_alias_functionality_tests():
         failed_tests = []
         if not alias_results['super_admin_config_works']: failed_tests.append("Super Admin config access")
         if not alias_results['juan_login_works']: failed_tests.append("Juan login")
+        if not alias_results.get('juan_has_pending_payment', False): failed_tests.append("Juan pending payment setup")
         if not alias_results['pago_pendiente_includes_alias']: failed_tests.append("New alias field missing")
         if not alias_results['alias_matches_config']: failed_tests.append("Alias mismatch")
         if not alias_results['existing_functionality_works']: failed_tests.append("Existing functionality broken")
