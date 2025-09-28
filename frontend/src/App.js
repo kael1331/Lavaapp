@@ -2191,10 +2191,11 @@ const SubirComprobante = () => {
             <div className="bg-gray-50 p-4 rounded-md">
               <h4 className="font-semibold text-gray-800 mb-2">Requisitos del Comprobante:</h4>
               <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
-                <li>El comprobante debe mostrar claramente el monto transferido</li>
-                <li>Debe incluir el alias bancario del destinatario</li>
+                <li>El comprobante debe mostrar claramente el monto transferido: <strong>${pagoPendiente.monto}</strong></li>
+                <li>Debe incluir el alias bancario del destinatario: <strong>{pagoPendiente.alias_bancario_superadmin}</strong></li>
                 <li>La imagen debe ser legible y de buena calidad</li>
                 <li>Captura de pantalla del comprobante bancario o transferencia</li>
+                <li>Verificar que la fecha de transferencia sea reciente</li>
               </ul>
             </div>
 
