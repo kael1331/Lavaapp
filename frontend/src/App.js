@@ -183,6 +183,12 @@ const useAuth = () => {
   return context;
 };
 
+// Auth Consumer Component
+const AuthConsumer = ({ children }) => {
+  const authContext = useAuth();
+  return children(authContext);
+};
+
 // Protected Route Component
 const ProtectedRoute = ({ children, requiredRole = null }) => {
   const { user, loading } = useAuth();
