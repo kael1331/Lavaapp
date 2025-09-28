@@ -1776,7 +1776,18 @@ async def get_configuracion_lavadero(request: Request):
             duracion_turno_minutos=60,
             dias_laborales=[1, 2, 3, 4, 5],  # Lunes a Viernes
             alias_bancario="lavadero.alias.mp",
-            precio_turno=5000.0
+            precio_turno=5000.0,
+            # Valores por defecto para nuevos campos
+            servicio_motos=True,
+            servicio_autos=True,
+            servicio_camionetas=True,
+            precio_motos=3000.0,
+            precio_autos=5000.0,
+            precio_camionetas=8000.0,
+            latitud=None,
+            longitud=None,
+            direccion_completa=None,
+            esta_abierto=False
         )
         config_dict = default_config.dict()
         await db.configuracion_lavadero.insert_one(config_dict)
