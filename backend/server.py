@@ -1007,6 +1007,117 @@ async def get_comprobantes_pendientes(request: Request):
     
     return result
 
+# Obtener historial completo de comprobantes (Super Admin) - NUEVA FUNCIONALIDAD
+@api_router.get("/superadmin/comprobantes-historial")
+async def get_comprobantes_historial(
+    request: Request,
+    estado: Optional[str] = None,
+    admin_id: Optional[str] = None,
+    limit: int = 50,
+    offset: int = 0
+):
+    await get_super_admin_user(request)
+    
+    # Construir filtros
+    match_filters = {}
+    if estado and estado in [EstadoPago.PENDIENTE, EstadoPago.CONFIRMADO, EstadoPago.RECHAZADO]:
+        match_filters["estado"] = estado
+    if admin_id:
+        match_filters["admin_id"] = admin_id
+    
+    # Pipeline para obtener historial completo con información detallada
+    pipeline = [
+        {"$match": match_filters} if match_filters else {"$match": {}},
+        {"$lookup": {
+            "from": "pagos_mensualidad",
+            "localField": "pago_mensualidad_id",
+            "foreignField": "id",
+            "as": "pago_info"
+        }},
+        {"$unwind": "$pago_info"},
+        {"$lookup": {
+            "from": "users",
+            "localField": "admin_id", 
+            "foreignField": "id",
+            "as": "admin_info"
+        }},
+        {"$unwind": "$admin_info"},
+        {"$lookup": {
+            "from": "lavaderos",
+            "localField": "pago_info.lavadero_id",
+            "foreignField": "id", 
+            "as": "lavadero_info"
+        }},
+        {"$unwind": "$lavadero_info"},
+        {"$project": {
+            "comprobante_id": "$id",
+            "admin_id": "$admin_id",
+            "admin_nombre": "$admin_info.nombre",
+            "admin_email": "$admin_info.email", 
+            "lavadero_nombre": "$lavadero_info.nombre",
+            "monto": "$pago_info.monto",
+            "mes_año": "$pago_info.mes_año",
+            "imagen_url": 1,
+            "created_at": 1,
+            "estado": 1,
+            "comentario_superadmin": 1,
+            "fecha_procesamiento": {"$ifNull": ["$fecha_procesamiento", None]}
+        }},
+        {"$sort": {"created_at": -1}},
+        {"$skip": offset},
+        {"$limit": limit}
+    ]
+    
+    # Ejecutar query principal
+    comprobantes_cursor = db.comprobantes_pago_mensualidad.aggregate(pipeline)
+    comprobantes = await comprobantes_cursor.to_list(limit)
+    
+    # Contar total de registros para paginación
+    count_pipeline = [
+        {"$match": match_filters} if match_filters else {"$match": {}},
+        {"$count": "total"}
+    ]
+    count_cursor = db.comprobantes_pago_mensualidad.aggregate(count_pipeline)
+    count_result = await count_cursor.to_list(1)
+    total = count_result[0]["total"] if count_result else 0
+    
+    # Obtener estadísticas de resumen
+    stats_pipeline = [
+        {"$group": {
+            "_id": "$estado",
+            "count": {"$sum": 1}
+        }}
+    ]
+    stats_cursor = db.comprobantes_pago_mensualidad.aggregate(stats_pipeline)
+    stats_raw = await stats_cursor.to_list(10)
+    
+    stats = {
+        "total": total,
+        "pendientes": 0,
+        "aprobados": 0,
+        "rechazados": 0
+    }
+    
+    for stat in stats_raw:
+        if stat["_id"] == EstadoPago.PENDIENTE:
+            stats["pendientes"] = stat["count"]
+        elif stat["_id"] == EstadoPago.CONFIRMADO:
+            stats["aprobados"] = stat["count"]
+        elif stat["_id"] == EstadoPago.RECHAZADO:
+            stats["rechazados"] = stat["count"]
+    
+    return {
+        "comprobantes": comprobantes,
+        "total": total,
+        "stats": stats,
+        "filters": {
+            "estado": estado,
+            "admin_id": admin_id,
+            "limit": limit,
+            "offset": offset
+        }
+    }
+
 # ========== ENDPOINTS DE COMPROBANTES ==========
 
 # Subir comprobante de pago mensualidad (Admin)
