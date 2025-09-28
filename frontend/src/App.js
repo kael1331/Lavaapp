@@ -873,10 +873,13 @@ const SuperAdminDashboard = () => {
             <div className="text-sm opacity-90">Ver todos los comprobantes</div>
           </Link>
           
-          <div className="bg-gray-600 hover:bg-gray-700 text-white p-4 rounded-lg text-center transition-colors cursor-pointer">
+          <Link 
+            to="/superadmin/configuracion" 
+            className="bg-gray-600 hover:bg-gray-700 text-white p-4 rounded-lg text-center transition-colors"
+          >
             <div className="text-lg font-semibold">Configuración</div>
             <div className="text-sm opacity-90">Precios y configuración global</div>
-          </div>
+          </Link>
         </div>
       </div>
     </div>
